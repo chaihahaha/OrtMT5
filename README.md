@@ -12,7 +12,7 @@ ortmt5 "path/to/mt5-ja_zh_beam_search.onnx" 128 1 8 1 1.1 1.1
 ```bash
 mkdir build
 cd build
-cmake ..
+cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime'
 cmake --build .
 ```
 
