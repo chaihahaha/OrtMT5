@@ -43,6 +43,7 @@ int wmain(int argc, wchar_t* argv[])
 	
     Ort::SessionOptions session_options;
 	session_options.SetIntraOpNumThreads(6);
+	session_options.SetInterOpNumThreads(6);
 	session_options.SetGraphOptimizationLevel(
 		GraphOptimizationLevel::ORT_ENABLE_ALL);
 	Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, "OrtMT5");
