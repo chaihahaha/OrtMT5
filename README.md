@@ -34,8 +34,8 @@ git clone https://github.com/microsoft/onnxruntime
 Finally, run the commands to convert model to onnx:
 
 ```
-python onnxruntime/onnxruntime/python/tools/transformers/convert_generation.py -m mt5-translation-ja_zh --model_type mt5  --output mt5-translation-ja_zh.onnx --disable_perf_test --disable_parity -e
+python ./onnxruntime/onnxruntime/python/tools/transformers/convert_generation.py -m ./mt5-translation-ja_zh --model_type mt5  --output mt5-translation-ja_zh.onnx --disable_perf_test --disable_parity -e
 
-python onnxruntime/onnxruntime/python/tools/transformers/convert_generation.py -m mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
+python ./onnxruntime/onnxruntime/python/tools/transformers/convert_generation.py -m ./mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
 ```
 
