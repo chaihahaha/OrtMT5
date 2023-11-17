@@ -10,6 +10,7 @@ ortmt5 "path/to/mt5-ja_zh_beam_search.onnx" 128 1 8 1 1.1 1.1
 ### Build:
 
 ```bash
+"path/to/VsDevCmd.bat" -arch=amd64
 mkdir build
 cd build
 cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime'
