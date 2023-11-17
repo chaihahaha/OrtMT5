@@ -128,7 +128,7 @@ int wmain(int argc, wchar_t* argv[])
             repetition_penalty_dims.data(), repetition_penalty_dims.size());
 
         std::vector<int32_t> input_ids_values = py_input_ids;
-        std::array<int64_t, 2> input_ids_dims{1, input_ids_values.size()};
+        std::vector<int64_t> input_ids_dims{1, (int64_t)input_ids_values.size()};
         Ort::Value input_ids = Ort::Value::CreateTensor<int32_t>(memory_info, input_ids_values.data(), input_ids_values.size(),
             input_ids_dims.data(), input_ids_dims.size());
 
