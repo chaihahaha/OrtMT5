@@ -35,3 +35,5 @@
 *.onnx
 build
 __pycache__
+*.zip
+*.rar

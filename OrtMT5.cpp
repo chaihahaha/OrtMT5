@@ -1,7 +1,6 @@
 #include "onnxruntime_cxx_api.h"
 #include <iostream>
 #include <vector>
-#include <cassert>
 #include <string>
 #include <filesystem>
 
@@ -9,16 +8,12 @@
 
 int wmain(int argc, wchar_t* argv[])
 {
-    try
+    if (argc != 8)
     {
-        assert(argc == 8);
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << "Caught " << e.what() << std::endl;
         std::cout << "Incorrect number of commandline args,"
             << "should be `OrtMT5.exe [model_path] [max_length] [min_length] "
             << "[num_beams] [num_return_sequences] [length_penalty] [repetition_penalty]`" << std::endl;
+        return -1;
     }
 
     int32_t max_length_int;
