@@ -53,7 +53,7 @@ int wmain(int argc, wchar_t* argv[])
     Ort::Env env(OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, "OrtMT5");
     const wchar_t* model_path = argv[1];
 
-    if (std::filesystem::exists(std::filesystem::path(model_path)))
+    if (!std::filesystem::exists(model_path))
     {
         std::cout << "Incorrect model path" << std::endl;
         return -1;
