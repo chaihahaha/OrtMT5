@@ -15,6 +15,7 @@ link_directories("${ONNXRUNTIME_ROOTDIR}/lib")
 
 add_executable(ortmt5 "OrtMT5.cpp")
 target_link_libraries(ortmt5 PRIVATE onnxruntime)
+target_compile_features(ortmt5 PRIVATE cxx_std_17)
 
 #In onnxruntime deafault install path, the required dlls are in lib and bin folders
 set(DLL_DIRS "${ONNXRUNTIME_ROOTDIR}/lib;${ONNXRUNTIME_ROOTDIR}/bin")
