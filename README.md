@@ -33,11 +33,22 @@ Second, clone onnxruntime repo:
 git clone https://github.com/microsoft/onnxruntime
 ```
 
-Finally, run the commands to convert model to onnx:
+Finally, run the commands to convert model to int8 quantized onnx:
 
 ```
+# In command line
 python -m onnxruntime.transformers.convert_generation -m ./mt5-translation-ja_zh --model_type mt5  --output mt5-translation-ja_zh.onnx --disable_perf_test --disable_parity -e
 
-python -m onnxruntime.transformers.convert_generation -m ./mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
+python -m onnxruntime.quantization.preprocess --input mt5-translation-ja_zh_encoder_decoder_init.onnx --output mt5-translation-ja_zh_encoder_decoder_init_infer.onnx --skip_optimization 1  --save_as_external_data
+
+python -m onnxruntime.quantization.preprocess --input mt5-translation-ja_zh_decoder.onnx --output mt5-translation-ja_zh_decoder_infer.onnx --skip_optimization 1  --save_as_external_data
+
+# In Python shell:
+from onnxruntime.quantization import QuantType, quantize_dynamic
+quantize_dynamic(model_input="mt5-translation-ja_zh_encoder_decoder_init_infer.onnx", model_output="mt5-translation-ja_zh_encoder_decoder_init-int8.onnx", weight_type=QuantType.QUInt8,use_external_data_format=True)
+quantize_dynamic(model_input="mt5-translation-ja_zh_decoder_infer.onnx", model_output="mt5-translation-ja_zh_decoder-int8.onnx", weight_type=QuantType.QUInt8,use_external_data_format=True)
+
+# In command line
+python -m onnxruntime.transformers.convert_generation -m D:\programs\LunaTranslator\mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder-int8.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init-int8.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
 ```
 
