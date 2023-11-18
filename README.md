@@ -14,7 +14,10 @@ python test_sp.py
 "path/to/VsDevCmd.bat" -arch=amd64
 mkdir build
 cd build
-cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime'
+# if win64
+cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64'
+# if win32
+cmake -A win32 .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x86'
 cmake --build .
 ```
 
