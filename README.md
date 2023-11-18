@@ -52,6 +52,6 @@ quantize_dynamic(model_input="mt5-translation-ja_zh_encoder_decoder_init_infer.o
 quantize_dynamic(model_input="mt5-translation-ja_zh_decoder_infer.onnx", model_output="mt5-translation-ja_zh_decoder-int8.onnx", weight_type=QuantType.QUInt8,use_external_data_format=True)
 
 # In command line
-python -m onnxruntime.transformers.convert_generation -m D:\programs\LunaTranslator\mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder-int8.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init-int8.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
+python -m onnxruntime.transformers.convert_generation -m path/to/mt5-translation-ja_zh --model_type mt5 --decoder_onnx mt5-translation-ja_zh_decoder-int8.onnx --encoder_decoder_init_onnx mt5-translation-ja_zh_encoder_decoder_init-int8.onnx --output mt5-ja_zh_beam_search.onnx  --disable_perf_test --disable_parity -e
 ```
 
