@@ -28,8 +28,14 @@ def translate_user_input(mt5_proc, tok):
     mt5_proc.stdin.write(pipe_in_str)
     pipe_out_str = mt5_proc.stdout.readline()
     print("time elapsed:", time.time() - tik)
-    output_ids = [int(i) for i in pipe_out_str.split()]
-    print(tok.decode(output_ids))
+    try:
+        output_ids = [int(i) for i in pipe_out_str.split()]
+        print(tok.decode(output_ids))
+    except ValueError:
+        print(pipe_out_str)
+        while pipe_out_str:
+            pipe_out_str = mt5_proc.stdout.readline()
+            print(pipe_out_str)
     return
 
 if __name__=='__main__':
