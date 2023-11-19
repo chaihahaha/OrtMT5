@@ -6,6 +6,19 @@
 
 #pragma comment(lib, "onnxruntime.lib")
 
+void print_tensor(Ort::Value& tensor)
+{
+    Ort::TensorTypeAndShapeInfo ts = tensor.GetTensorTypeAndShapeInfo();
+
+    const int32_t* el = tensor.GetTensorData<int32_t>();
+    for (int i = 0; i < ts.GetElementCount(); i++)
+    {
+        std::cout << el[i] << " ";
+    }
+    std::cout << std::endl;
+    return;
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
     if (argc != 8)
@@ -70,8 +83,7 @@ int wmain(int argc, wchar_t* argv[])
         input_names_ptr.push_back(std::move(input_name));
     }
 
-    Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(
-        OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+    Ort::ConstMemoryInfo memory_info = allocator.GetInfo();
     //size_t input_count = session.GetInputCount();
     int32_t input_length = -1;
     int32_t input_value = -1;
@@ -146,19 +158,21 @@ int wmain(int argc, wchar_t* argv[])
 
         std::vector<const char*> output_names{output_name};
         output_names.resize(1);
-        //size_t output_count = 1;
+        std::vector<int64_t> output_ids_dims{1, 1, max_length_int};
+        std::vector<Ort::Value> output_tensors;
 
-        std::vector<Ort::Value> output_tensors = session.Run(Ort::RunOptions{nullptr}, input_node_names.data(), input_tensors.data(), input_tensors.size(), output_names.data(), output_names.size());
-        Ort::Value output_tensor = std::move(output_tensors[0]);
+        output_tensors.push_back(Ort::Value::CreateTensor<int32_t>(allocator,
+            output_ids_dims.data(), output_ids_dims.size()));
 
-        Ort::TensorTypeAndShapeInfo ts = output_tensor.GetTensorTypeAndShapeInfo();
-
-        const int32_t* output_tokens = output_tensor.GetTensorData<int32_t>();
-        for (int i = 0; i < ts.GetElementCount(); i++)
-        {
-            std::cout << output_tokens[i] << " ";
-        }
-        std::cout << std::endl;
+        session.Run(
+            Ort::RunOptions{nullptr},
+            input_node_names.data(),
+            input_tensors.data(),
+            input_tensors.size(),
+            output_names.data(),
+            output_tensors.data(),
+            output_names.size());
+        print_tensor(output_tensors[0]);
     }
     return 0;
 }
