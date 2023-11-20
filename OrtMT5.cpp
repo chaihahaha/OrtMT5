@@ -125,7 +125,7 @@ void run_async(
         }
         for (int i = 0; i < output_tensors.size(); i++)
         {
-            input_tensors[i].release();
+            output_tensors[i].release();
         }
     };
     auto ok = std::async(
