@@ -13,9 +13,13 @@ endif()
 include_directories("${ONNXRUNTIME_ROOTDIR}/include" "${ONNXRUNTIME_ROOTDIR}/include/onnxruntime/core/session")
 link_directories("${ONNXRUNTIME_ROOTDIR}/lib")
 
+
 add_executable(ortmt5 "OrtMT5.cpp")
-target_link_libraries(ortmt5 PRIVATE onnxruntime)
 target_compile_features(ortmt5 PRIVATE cxx_std_17)
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} /MTd")
+endif()
 
 #In onnxruntime deafault install path, the required dlls are in lib and bin folders
 set(DLL_DIRS "${ONNXRUNTIME_ROOTDIR}/lib;${ONNXRUNTIME_ROOTDIR}/bin")
