@@ -23,17 +23,26 @@ void print_tensor(Ort::Value& tensor)
 
 void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr)
 {
-    //std::chrono::duration<double, std::milli> dur{1};
-    //// timeout in about 10 secs
-    //for (int i = 0; i < 1000 && atomic_printing.load(); ++i) {
-    //  std::this_thread::sleep_for(dur);
-    //}
+    std::chrono::duration<double, std::milli> dur{1};
+    // timeout in about 10 secs
+    for (int i = 0; i < 1000 && atomic_printing.load(); ++i) {
+      std::this_thread::sleep_for(dur);
+    }
+    
     atomic_printing.store(true);
 #ifdef DEBUG
     std::cout << "in callback" << std::endl;
 #endif
+    Ort::Status status(status_ptr);
     Ort::Value output_value(outputs[0]);
-    print_tensor(output_value);
+    if (status.IsOK())
+        print_tensor(output_value);
+    else
+    {
+#ifdef DEBUG
+        std::cout << "runasync failed" << std::endl;
+#endif
+    }
     output_value.release();
     atomic_printing.store(false);
 }
@@ -114,13 +123,41 @@ int wmain(int argc, wchar_t* argv[])
         input_names_ptr.push_back(std::move(input_name));
     }
 
+    Ort::ConstMemoryInfo memory_info = allocator.GetInfo();
+
+    std::vector<int32_t> max_length_values{ max_length_int };
+    std::vector<int64_t> max_length_dims{ 1 };
+
+    std::vector<int32_t> min_length_values{ min_length_int };
+    std::vector<int64_t> min_length_dims{ 1 };
+
+    std::vector<int32_t> num_beams_values{ num_beams_int };
+    std::vector<int64_t> num_beams_dims{ 1 };
+
+    std::vector<int32_t> num_return_sequences_values{ num_return_sequences_int };
+    std::vector<int64_t> num_return_sequences_dims{ 1 };
+
+    std::vector<float> length_penalty_values{ (float)length_penalty_float };
+    std::vector<int64_t> length_penalty_dims{ 1 };
+
+    std::vector<float> repetition_penalty_values{ (float)repetition_penalty_float };
+    std::vector<int64_t> repetition_penalty_dims = { 1 };
+
+    Ort::AllocatedStringPtr output_name_ptr = session->GetOutputNameAllocated(0, allocator);
+    const char* output_name = output_name_ptr.get();
+
+    std::vector<const char*> output_names{output_name};
+    output_names.resize(1);
+    std::vector<int64_t> output_ids_dims{1, 1, max_length_int};
+
+    std::vector<std::vector<int32_t>> input_ids_pool;
+    std::vector<std::vector<int64_t>> input_ids_dims_pool;
+    std::vector<std::vector<Ort::Value>> input_tensors_pool;
+    std::vector<std::vector<Ort::Value>> output_tensors_pool;
+
     int32_t input_length = -1;
     int32_t input_value = -1;
 
-
-
-    std::vector<std::vector<Ort::Value>> input_tensors_pool;
-    std::vector<std::vector<Ort::Value>> output_tensors_pool;
     int scnt = 0;
     while (std::cin >> input_length)
     {
@@ -143,43 +180,25 @@ int wmain(int argc, wchar_t* argv[])
             }
         }
         
-
-        Ort::ConstMemoryInfo memory_info = allocator.GetInfo();
-
-        std::vector<int32_t> max_length_values{ max_length_int };
-        std::vector<int64_t> max_length_dims{ 1 };
         Ort::Value max_length = Ort::Value::CreateTensor<int32_t>(memory_info, max_length_values.data(), max_length_values.size(),
             max_length_dims.data(), max_length_dims.size());
-
-        std::vector<int32_t> min_length_values{ min_length_int };
-        std::vector<int64_t> min_length_dims{ 1 };
         Ort::Value min_length = Ort::Value::CreateTensor<int32_t>(memory_info, min_length_values.data(), min_length_values.size(),
             min_length_dims.data(), min_length_dims.size());
-
-        std::vector<int32_t> num_beams_values{ num_beams_int };
-        std::vector<int64_t> num_beams_dims{ 1 };
         Ort::Value num_beams = Ort::Value::CreateTensor<int32_t>(memory_info, num_beams_values.data(), num_beams_values.size(),
             num_beams_dims.data(), num_beams_dims.size());
-
-        std::vector<int32_t> num_return_sequences_values{ num_return_sequences_int };
-        std::vector<int64_t> num_return_sequences_dims{ 1 };
         Ort::Value num_return_sequences = Ort::Value::CreateTensor<int32_t>(memory_info, num_return_sequences_values.data(), num_return_sequences_values.size(),
             num_return_sequences_dims.data(), num_return_sequences_dims.size());
-
-        std::vector<float> length_penalty_values{ (float)length_penalty_float };
-        std::vector<int64_t> length_penalty_dims{ 1 };
         Ort::Value length_penalty = Ort::Value::CreateTensor<float>(memory_info, length_penalty_values.data(), length_penalty_values.size(),
             length_penalty_dims.data(), length_penalty_dims.size());
-
-        std::vector<float> repetition_penalty_values{ (float)repetition_penalty_float };
-        std::vector<int64_t> repetition_penalty_dims = { 1 };
         Ort::Value repetition_penalty = Ort::Value::CreateTensor<float>(memory_info, repetition_penalty_values.data(), repetition_penalty_values.size(),
             repetition_penalty_dims.data(), repetition_penalty_dims.size());
 
-        std::vector<int32_t> input_ids_values = py_input_ids;
-        std::vector<int64_t> input_ids_dims{1, (int64_t)input_ids_values.size()};
-        Ort::Value input_ids = Ort::Value::CreateTensor<int32_t>(memory_info, input_ids_values.data(), input_ids_values.size(),
-            input_ids_dims.data(), input_ids_dims.size());
+        input_ids_pool.push_back(std::move(py_input_ids));
+        std::vector<int64_t> input_ids_dims{1, (int64_t)input_ids_pool[scnt].size()};
+        input_ids_dims_pool.push_back(std::move(input_ids_dims));
+
+        Ort::Value input_ids = Ort::Value::CreateTensor<int32_t>(memory_info, input_ids_pool[scnt].data(), input_ids_pool[scnt].size(),
+            input_ids_dims_pool[scnt].data(), input_ids_dims_pool[scnt].size());
 
         std::vector<Ort::Value> input_tensors;
         input_tensors.push_back(std::move(input_ids));
@@ -191,12 +210,6 @@ int wmain(int argc, wchar_t* argv[])
         input_tensors.push_back(std::move(repetition_penalty));
         input_tensors_pool.push_back(std::move(input_tensors));
 
-        Ort::AllocatedStringPtr output_name_ptr = session->GetOutputNameAllocated(0, allocator);
-        const char* output_name = output_name_ptr.get();
-
-        std::vector<const char*> output_names{output_name};
-        output_names.resize(1);
-        std::vector<int64_t> output_ids_dims{1, 1, max_length_int};
         std::vector<Ort::Value> output_tensors;
 
         output_tensors.push_back(
@@ -219,12 +232,11 @@ int wmain(int argc, wchar_t* argv[])
             AsyncCallback,
             nullptr
             );
-        std::chrono::duration<double, std::milli> dur{100};
+        std::chrono::duration<double, std::milli> dur{10};
         std::this_thread::sleep_for(dur);
         for (int i = 0; i < input_tensors_pool[scnt].size(); i++)
         {
-            Ort::Value tensor(std::move(input_tensors_pool[scnt][i]));
-            tensor.release();
+            input_tensors_pool[scnt][i].release();
         }
         scnt += 1;
     }
