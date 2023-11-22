@@ -1,24 +1,12 @@
-#include "onnxruntime_cxx_api.h"
-#include <iostream>
-#include <vector>
-#include <string>
-#include <filesystem>
-#include <thread>
-#include <atomic>
-#include <functional>
-#include <future>
+#include "OrtMT5.h"
 
 #pragma comment(lib, "onnxruntime.lib")
 
-//static std::thread::id caller_tid = std::this_thread::get_id();
 //static std::atomic_int thread_cnt{0};
-static std::atomic_bool atomic_wait{false};
-//static std::thread::id running_inference_thread_id{};
+static std::atomic_bool atomic_printing{false};
 std::unique_ptr<Ort::Session> session = nullptr;
 std::unique_ptr<Ort::Env> env = nullptr;
-
-//#define MAX_THREADS 999
-//static std::array<std::atomic_bool, MAX_THREADS> atomic_wait = {false};
+static size_t num_input_nodes = -1;
 
 void print_tensor(Ort::Value& tensor)
 {
@@ -33,23 +21,21 @@ void print_tensor(Ort::Value& tensor)
     return;
 }
 
-void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr) {
-    //const int old_thread_cnt = *reinterpret_cast<const int*>(user_data);
-    OrtValue** input_tensors = reinterpret_cast<OrtValue**>(user_data);
-    for (int i=0; i < 5; i++)
-    {
-        Ort::Value input_value(input_tensors[i]);
-        print_tensor(input_value);
-        input_value.release();
-    }
+void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr)
+{
+    //std::chrono::duration<double, std::milli> dur{1};
+    //// timeout in about 10 secs
+    //for (int i = 0; i < 1000 && atomic_printing.load(); ++i) {
+    //  std::this_thread::sleep_for(dur);
+    //}
+    atomic_printing.store(true);
+#ifdef DEBUG
+    std::cout << "in callback" << std::endl;
+#endif
     Ort::Value output_value(outputs[0]);
-    //if (old_thread_cnt == thread_cnt.load())
-    std::cout << "output" << std::endl;
     print_tensor(output_value);
-    //output_value.release();
-    //atomic_wait[old_thread_cnt].store(true);
-    atomic_wait.store(true);
-    std::cout << "callback" << std::endl;
+    output_value.release();
+    atomic_printing.store(false);
 }
 
 int wmain(int argc, wchar_t* argv[])
@@ -115,7 +101,7 @@ int wmain(int argc, wchar_t* argv[])
 
     Ort::AllocatorWithDefaultOptions allocator;
 
-    const size_t num_input_nodes = session->GetInputCount();
+    num_input_nodes = session->GetInputCount();
     std::vector<Ort::AllocatedStringPtr> input_names_ptr;
     std::vector<const char*> input_node_names;
     input_node_names.reserve(num_input_nodes);
@@ -128,14 +114,14 @@ int wmain(int argc, wchar_t* argv[])
         input_names_ptr.push_back(std::move(input_name));
     }
 
-    //size_t input_count = session->GetInputCount();
     int32_t input_length = -1;
     int32_t input_value = -1;
+
+
+
     std::vector<std::vector<Ort::Value>> input_tensors_pool;
     std::vector<std::vector<Ort::Value>> output_tensors_pool;
-
     int scnt = 0;
-
     while (std::cin >> input_length)
     {
         if (input_length <= 0)
@@ -158,21 +144,7 @@ int wmain(int argc, wchar_t* argv[])
         }
         
 
-        //auto a = std::async(
-        //        std::launch::async,
-        //        run_async,
-        //        py_input_ids,
-        //        max_length_int,
-        //        min_length_int,
-        //        num_beams_int,
-        //        num_return_sequences_int,
-        //        length_penalty_float,
-        //        repetition_penalty_float,
-        //        input_node_names,
-        //        allocator
-        //);
         Ort::ConstMemoryInfo memory_info = allocator.GetInfo();
-        //auto tid = std::this_thread::get_id();
 
         std::vector<int32_t> max_length_values{ max_length_int };
         std::vector<int64_t> max_length_dims{ 1 };
@@ -236,9 +208,6 @@ int wmain(int argc, wchar_t* argv[])
         );
         output_tensors_pool.push_back(std::move(output_tensors));
 
-        //thread_cnt.store( (thread_cnt.load() + 1) % MAX_THREADS);
-        //int old_thread_cnt = thread_cnt.load() % MAX_THREADS;
-        std::cout << "calling runasync" <<std::endl;
         session->RunAsync(
             Ort::RunOptions{nullptr},
             input_node_names.data(),
@@ -248,17 +217,21 @@ int wmain(int argc, wchar_t* argv[])
             output_tensors_pool[scnt].data(),
             output_names.size(),
             AsyncCallback,
-            input_tensors_pool[scnt].data()
+            nullptr
             );
         std::chrono::duration<double, std::milli> dur{100};
-        //while (!atomic_wait.load())
-        //    std::this_thread::sleep_for(dur);
         std::this_thread::sleep_for(dur);
-        //atomic_wait.store(false);
+        for (int i = 0; i < input_tensors_pool[scnt].size(); i++)
+        {
+            Ort::Value tensor(std::move(input_tensors_pool[scnt][i]));
+            tensor.release();
+        }
         scnt += 1;
-        std::cout << "called runasync" <<std::endl;
     }
-    std::chrono::duration<double, std::milli> dur{10000};
-    std::this_thread::sleep_for(dur);
+#ifdef DEBUG
+    std::cout << "debug on" << std::endl;
+    std::chrono::duration<double, std::milli> quit_delay{100000};
+    std::this_thread::sleep_for(quit_delay);
+#endif
     return 0;
 }
