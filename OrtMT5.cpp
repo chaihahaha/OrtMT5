@@ -7,6 +7,7 @@ static std::atomic_bool atomic_printing{false};
 std::unique_ptr<Ort::Session> session = nullptr;
 std::unique_ptr<Ort::Env> env = nullptr;
 static size_t num_input_nodes = -1;
+static int max_threads = -1;
 
 void print_tensor(Ort::Value& tensor)
 {
@@ -82,9 +83,13 @@ int wmain(int argc, wchar_t* argv[])
     }
     
     Ort::SessionOptions session_options;
-    int max_threads = std::thread::hardware_concurrency();
+    max_threads = std::thread::hardware_concurrency();
+#ifdef DEBUG
+    std::cout << "max threads:" << max_threads << std::endl;
+#endif
     //session_options.SetIntraOpNumThreads(max_threads/2);
-    //session_options.SetInterOpNumThreads(max_threads/2);
+    //session_options.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
+    session_options.SetInterOpNumThreads(max_threads);
     session_options.SetGraphOptimizationLevel(
         GraphOptimizationLevel::ORT_ENABLE_ALL);
     //session_options.DisablePerSessionThreads();
@@ -232,12 +237,12 @@ int wmain(int argc, wchar_t* argv[])
             AsyncCallback,
             nullptr
             );
-        std::chrono::duration<double, std::milli> dur{10};
+        std::chrono::duration<double, std::milli> dur{100};
         std::this_thread::sleep_for(dur);
-        for (int i = 0; i < input_tensors_pool[scnt].size(); i++)
-        {
-            input_tensors_pool[scnt][i].release();
-        }
+        //for (int i = 0; i < input_tensors_pool[scnt].size(); i++)
+        //{
+        //    input_tensors_pool[scnt][i].release();
+        //}
         scnt += 1;
     }
 #ifdef DEBUG
