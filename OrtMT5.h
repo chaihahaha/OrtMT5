@@ -8,3 +8,4 @@
 
 void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr);
 void print_tensor(Ort::Value& tensor);
+void clear_ortvalue_vector(OrtValue** a, size_t len);

@@ -2,7 +2,7 @@
 
 #pragma comment(lib, "onnxruntime.lib")
 
-#define MAX_ASYNC_RUNS 6000
+#define MAX_ASYNC_RUNS 10000
 
 //static std::atomic_int thread_cnt{0};
 static std::atomic_bool atomic_printing{false};
@@ -13,10 +13,14 @@ static int max_threads = -1;
 
 void clear_ortvalue_vector(OrtValue** a, size_t len)
 {
+#ifdef DEBUG
+    std::cout << "releasing " << len << std::endl;
+#endif
     for (size_t i = 0; i < len; i++)
     {
         Ort::Value v = Ort::Value(a[i]);
         v.release();
+        free(v);
     }
 }
 
@@ -25,7 +29,7 @@ void print_tensor(Ort::Value& tensor)
     Ort::TensorTypeAndShapeInfo ts = tensor.GetTensorTypeAndShapeInfo();
 
     const int32_t* el = tensor.GetTensorData<int32_t>();
-    for (int i = 0; i < ts.GetElementCount(); i++)
+    for (size_t i = 0; i < ts.GetElementCount(); i++)
     {
         std::cout << el[i] << " ";
     }
@@ -57,7 +61,6 @@ void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtS
         std::cout << "runasync failed" << std::endl;
 #endif
     }
-    output_value.release();
     atomic_printing.store(false);
 }
 
@@ -258,6 +261,10 @@ int wmain(int argc, wchar_t* argv[])
             nullptr
             );
         scnt = (scnt + 1) % MAX_ASYNC_RUNS;
+#ifdef DEBUG
+        std::chrono::duration<double, std::milli> dur{5000};
+        std::this_thread::sleep_for(dur);
+#endif
     }
 #ifdef DEBUG
     std::cout << "debug on" << std::endl;
