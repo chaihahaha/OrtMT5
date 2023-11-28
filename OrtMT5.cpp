@@ -20,7 +20,6 @@ void clear_ortvalue_vector(OrtValue** a, size_t len)
     {
         Ort::Value v = Ort::Value(a[i]);
         v.release();
-        delete v;
     }
 }
 
