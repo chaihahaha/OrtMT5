@@ -19,17 +19,14 @@ def parse_args():
 
 def translate_user_input(mt5_proc):
     in_str = input("Setence to be translated: ")
-    pipe_in_str = "<-ja2zh-> " + in_str
+    pipe_in_str = "<-ja2zh-> " + in_str + "\n"
     print("mt5 subprocess stdin:", pipe_in_str)
 
     tik = time.time()
-    mt5_proc.stdin.write(pipe_in_str, encoding='utf8')
-    pipe_out_str = mt5_proc.stdout.readline(encoding='utf8')
+    mt5_proc.stdin.write(pipe_in_str)
+    pipe_out_str = mt5_proc.stdout.readline()
     print("time elapsed:", time.time() - tik)
-    print(pipe_out_str)
-    while pipe_out_str:
-        pipe_out_str = mt5_proc.stdout.readline(encoding='utf8')
-        print(pipe_out_str)
+    print(pipe_out_str, flush=True)
     return
 
 if __name__=='__main__':
