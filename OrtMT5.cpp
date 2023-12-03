@@ -40,8 +40,6 @@ std::string wstr2str(std::wstring ws)
 std::string to_utf8str(std::string ws)
 {
     icu::UnicodeString us(ws.c_str());
-    //std::wstring_convert<std::codecvt_utf8<char>> converter;
-    //std::string s = converter.to_bytes(ws);
     std::string s;
     us.toUTF8String(s);
     return s;
@@ -55,13 +53,11 @@ void print_tensor(Ort::Value& tensor)
     std::vector<int> ids;
     for (size_t i = 0; i < ts.GetElementCount(); i++)
     {
-        //std::cout << el[i] << " ";
         ids.push_back((int)el[i]);
     }
     std::string translated;
     sp->Decode(ids, &translated);
     std::cout << translated << std::endl;
-    //std::cout << std::endl;
     return;
 }
 
@@ -97,7 +93,6 @@ int main(int argc, char* argv[])
     argparse::ArgumentParser program("OrtMT5");
     program.add_argument("--model_path").default_value(std::string("./mt5-ja_zh_beam_search.onnx"));
     program.add_argument("--spm_tokenizer_path").default_value(std::string("./vocabs_mc4.250000.100extra_sentencepiece.model"));
-    program.add_argument("--spm_vocab_path").default_value(std::string("./vocabs_mc4.250000.100extra_sentencepiece.vocab"));
     program.add_argument("--max_length").default_value(128).scan<'i', int>();
     program.add_argument("--min_length").default_value(1).scan<'i', int>();
     program.add_argument("--num_beams").default_value(4).scan<'i', int>();
@@ -119,7 +114,6 @@ int main(int argc, char* argv[])
     }
 
     std::string arg_tokenizer_path = program.get<std::string>("--spm_tokenizer_path");
-    std::string arg_vocab_path = program.get<std::string>("--spm_vocab_path");
     if (!std::filesystem::exists(arg_tokenizer_path))
     {
         std::cout << "Incorrect tokenizer path" << std::endl;
@@ -128,10 +122,6 @@ int main(int argc, char* argv[])
     std::cout << "tokenizing" << std::endl;
     sp = std::make_unique<sentencepiece::SentencePieceProcessor>();
     const auto spm_status = sp->Load(arg_tokenizer_path);
-    //const auto vocab_load_status = sp->LoadVocabulary(arg_vocab_path, 99999);
-    //if ((!spm_status.ok()) | (!vocab_load_status.ok())) {
-    //   std::cerr << spm_status.ToString() << std::endl;
-    //}
     std::cout << sp->GetPieceSize() << std::endl;
 
     int32_t max_length_int;
@@ -228,39 +218,14 @@ int main(int argc, char* argv[])
     std::array<std::vector<Ort::Value>, MAX_ASYNC_RUNS> input_tensors_pool;
     std::array<std::vector<Ort::Value>, MAX_ASYNC_RUNS> output_tensors_pool;
 
-    //int32_t input_length = -1;
-    //int32_t input_value = -1;
-
     int scnt = 0;
     while (1)
     {
-        //std::wstring input_wstr;
-        //std::getline(std::wcin, input_wstr, L'\n');
-        ////std::wcin >> input_wstr;
-        //std::wcout << "user input:" << input_wstr << std::endl;
-        //std::string input_str = wstr2str(input_wstr);
         std::string input_str_raw;
         std::getline(std::cin, input_str_raw, '\n');
         std::string input_str = to_utf8str(input_str_raw);
         std::cout << "user input:" << input_str_raw << std::endl;
-        //if (input_length <= 0)
-        //{
-        //    std::cout << "invalid input, not a positive integer" << std::endl;
-        //    return -1;
-        //}
-        //std::vector<int32_t> py_input_ids{};
-        //for (int i = 0; i < input_length; i++)
-        //{
-        //    if (std::cin >> input_value)
-        //    {
-        //        py_input_ids.push_back(input_value);
-        //    }
-        //    else
-        //    {
-        //        std::cout << "invalid input, not a integer" << std::endl;
-        //        return -1;
-        //    }
-        //}
+
         std::vector<std::string> input_pieces;
         sp->Encode(input_str, &input_pieces).IgnoreError();
         for (int ii = 0; ii < input_pieces.size(); ii++)
