@@ -17,25 +17,19 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-def translate_user_input(mt5_proc, tok):
+def translate_user_input(mt5_proc):
     in_str = input("Setence to be translated: ")
-    input_encoding = tok.encode('<-ja2zh-> ' + in_str)
-    input_ids = input_encoding.ids
-    pipe_in_str = " ".join([str(len(input_ids))] + [str(i) for i in input_ids] + ['\n'])
+    pipe_in_str = "<-ja2zh-> " + in_str
     print("mt5 subprocess stdin:", pipe_in_str)
 
     tik = time.time()
-    mt5_proc.stdin.write(pipe_in_str)
-    pipe_out_str = mt5_proc.stdout.readline()
+    mt5_proc.stdin.write(pipe_in_str, encoding='utf8')
+    pipe_out_str = mt5_proc.stdout.readline(encoding='utf8')
     print("time elapsed:", time.time() - tik)
-    try:
-        output_ids = [int(i) for i in pipe_out_str.split()]
-        print(tok.decode(output_ids))
-    except ValueError:
+    print(pipe_out_str)
+    while pipe_out_str:
+        pipe_out_str = mt5_proc.stdout.readline(encoding='utf8')
         print(pipe_out_str)
-        while pipe_out_str:
-            pipe_out_str = mt5_proc.stdout.readline()
-            print(pipe_out_str)
     return
 
 if __name__=='__main__':
@@ -55,7 +49,8 @@ if __name__=='__main__':
     print("mt5 subprocess args:", mt5_args)
     mt5_proc = subprocess.Popen(mt5_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
     
-    tok = tokenizers.Tokenizer.from_file(tok_path)
+    #tok = tokenizers.Tokenizer.from_file(tok_path)
 
     while True:
-        translate_user_input(mt5_proc, tok)
+        #translate_user_input(mt5_proc, tok)
+        translate_user_input(mt5_proc)

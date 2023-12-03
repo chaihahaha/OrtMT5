@@ -31,8 +31,6 @@ find_package(Threads)
 #if(MSVC)
 #    #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 #    #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} /MTd")
-#    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
-#    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/execution-charset:utf-8>")
 #endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
@@ -44,7 +42,12 @@ endif()
 
 add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h")
 
-target_link_libraries(ortmt5 PRIVATE onnxruntime sentencepiece icuuc Threads::Threads)
+#if(MSVC)
+#    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
+#    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/execution-charset:utf-8>")
+#endif()
+
+target_link_libraries(ortmt5 PRIVATE onnxruntime sentencepiece icuuc icuio Threads::Threads)
 target_compile_features(ortmt5 PRIVATE cxx_std_17)
 #In onnxruntime deafault install path, the required dlls are in lib and bin folders
 set(DLL_DIRS "${ONNXRUNTIME_ROOTDIR}/lib;${ONNXRUNTIME_ROOTDIR}/bin;${SENTENCEPIECE_ROOTDIR}/lib;${SENTENCEPIECE_ROOTDIR}/bin;${ICU_ROOTDIR}/bin64")

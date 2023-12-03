@@ -37,12 +37,10 @@ std::string wstr2str(std::wstring ws)
     return s;
 }
 
-std::string to_utf8str(std::string ws)
+icu::UnicodeString to_ustr(std::string ws)
 {
     icu::UnicodeString us(ws.c_str());
-    std::string s;
-    us.toUTF8String(s);
-    return s;
+    return us;
 }
 
 void print_tensor(Ort::Value& tensor)
@@ -54,10 +52,34 @@ void print_tensor(Ort::Value& tensor)
     for (size_t i = 0; i < ts.GetElementCount(); i++)
     {
         ids.push_back((int)el[i]);
+        std::cout << el[i] << ", " ;
     }
+    std::cout << std::endl;
     std::string translated;
     sp->Decode(ids, &translated);
-    std::cout << translated << std::endl;
+    const char* raw_translated = translated.c_str();
+    for (int i = 0; i < 4096; i++)
+    {
+        std::cout << (int)(unsigned char) raw_translated[i] << ", ";
+        if (raw_translated[i] == 0)
+            break;
+    }
+    std::cout << std::endl;
+    icu::UnicodeString translated_ustr = icu::UnicodeString::fromUTF8(icu::StringPiece(translated.c_str()));
+    //char platform_char[4096];
+    ////translated_ustr.extract(0, translated_ustr.length(), platform_char, "cp936");
+    //for (int i = 0; i < 4096; i++)
+    //{
+    //    std::cout << (int)(unsigned char) platform_char[i] << ", ";
+    //    if (platform_char[i] == 0)
+    //        break;
+    //}
+    //std::cout << std::endl;
+    //auto status;
+    //icu::UConverter *conv = icu::ucnv_open("cp936", &status);
+    //ucnv_fromUChars(conv, 
+    std::cout << "printing platform char" << std::endl;
+    std::cout << translated_ustr << std::endl;
     return;
 }
 
@@ -119,10 +141,8 @@ int main(int argc, char* argv[])
         std::cout << "Incorrect tokenizer path" << std::endl;
         return -1;
     }
-    std::cout << "tokenizing" << std::endl;
     sp = std::make_unique<sentencepiece::SentencePieceProcessor>();
     const auto spm_status = sp->Load(arg_tokenizer_path);
-    std::cout << sp->GetPieceSize() << std::endl;
 
     int32_t max_length_int;
     int32_t min_length_int;
@@ -221,21 +241,13 @@ int main(int argc, char* argv[])
     int scnt = 0;
     while (1)
     {
-        std::string input_str_raw;
-        std::getline(std::cin, input_str_raw, '\n');
-        std::string input_str = to_utf8str(input_str_raw);
-        std::cout << "user input:" << input_str_raw << std::endl;
+        std::string input_raw;
+        std::getline(std::cin, input_raw, '\n');
+        icu::UnicodeString input_us(input_raw.c_str());
+        std::string input_str;
+        input_us.toUTF8String(input_str);
 
-        std::vector<std::string> input_pieces;
-        sp->Encode(input_str, &input_pieces).IgnoreError();
-        for (int ii = 0; ii < input_pieces.size(); ii++)
-        {
-            std::cout << input_pieces[ii] << "," << std::endl;
-        }
-        std::cout << std::endl;
-
-        std::vector<int> py_input_ids;
-        sp->Encode(input_str, &py_input_ids).IgnoreError();
+        std::vector<int> py_input_ids = sp->EncodeAsIds(input_str);
         for (int ii = 0; ii < py_input_ids.size(); ii++)
         {
             std::cout << py_input_ids[ii] << "," << std::endl;

@@ -9,6 +9,7 @@
 #include <thread>
 #include <atomic>
 #include <unicode/unistr.h>
+#include <unicode/ustream.h>
 
 void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr);
 void print_tensor(Ort::Value& tensor);
