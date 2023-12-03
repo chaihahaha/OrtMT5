@@ -51,7 +51,7 @@ if __name__=='__main__':
     length_penalty_float = args.length_penalty
     repetition_penalty_float = args.repetition_penalty
     
-    mt5_args = [ort_mt5_path, model_path, str(max_length_int), str(min_length_int), str(num_beams_int), str(num_return_sequences_int), str(length_penalty_float), str(repetition_penalty_float)]
+    mt5_args = [ort_mt5_path]
     print("mt5 subprocess args:", mt5_args)
     mt5_proc = subprocess.Popen(mt5_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True)
     

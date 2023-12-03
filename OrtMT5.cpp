@@ -2,7 +2,7 @@
 
 #pragma comment(lib, "onnxruntime.lib")
 
-#define MAX_ASYNC_RUNS 10000
+#define MAX_ASYNC_RUNS 6000
 
 //static std::atomic_int thread_cnt{0};
 static std::atomic_bool atomic_printing{false};
@@ -63,39 +63,41 @@ void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtS
     atomic_printing.store(false);
 }
 
-int wmain(int argc, wchar_t* argv[])
+int main(int argc, char* argv[])
 {
-    if (argc != 8)
+    argparse::ArgumentParser program("OrtMT5");
+    program.add_argument("--model_path").default_value(std::string("./mt5-ja_zh_beam_search.onnx"));
+    program.add_argument("--max_length").default_value(128).scan<'i', int>();
+    program.add_argument("--min_length").default_value(1).scan<'i', int>();
+    program.add_argument("--num_beams").default_value(4).scan<'i', int>();
+    program.add_argument("--num_return_sequences").default_value(1).scan<'i', int>();
+    program.add_argument("--length_penalty").default_value((float)1.3).scan<'g', float>();
+    program.add_argument("--repetition_penalty").default_value((float)1.3).scan<'g', float>();
+
+    try
     {
-        std::cout << "Incorrect number of commandline args,"
-            << "should be `OrtMT5.exe [model_path] [max_length] [min_length] "
+        program.parse_args(argc, argv);
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Caught " << e.what() << std::endl;
+        std::cout << "Incorrect commandline args,"
+            << "should be `OrtMT5.exe [model_path] [spm_tokenizer_path] [max_length] [min_length] "
             << "[num_beams] [num_return_sequences] [length_penalty] [repetition_penalty]`" << std::endl;
         return -1;
     }
-
     int32_t max_length_int;
     int32_t min_length_int;
     int32_t num_beams_int;
     int32_t num_return_sequences_int;
     float length_penalty_float;
     float repetition_penalty_float;
-    try
-    {
-        max_length_int = std::stoi(argv[2]);
-        min_length_int = std::stoi(argv[3]);
-        num_beams_int = std::stoi(argv[4]);
-        num_return_sequences_int = std::stoi(argv[5]);
-        length_penalty_float = std::stof(argv[6]);
-        repetition_penalty_float = std::stof(argv[7]);
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << "Caught " << e.what() << std::endl;
-        std::cout << "Incorrect commandline args,"
-            << "should be `OrtMT5.exe [model_path] [max_length] [min_length] "
-            << "[num_beams] [num_return_sequences] [length_penalty] [repetition_penalty]`" << std::endl;
-        return -1;
-    }
+    max_length_int = program.get<int>("--max_length");
+    min_length_int = program.get<int>("--min_length");
+    num_beams_int = program.get<int>("--num_beams");
+    num_return_sequences_int = program.get<int>("--num_return_sequences");
+    length_penalty_float = program.get<float>("--length_penalty");
+    repetition_penalty_float = program.get<float>("--repetition_penalty");
     
     Ort::SessionOptions session_options;
     max_threads = std::thread::hardware_concurrency();
@@ -118,7 +120,10 @@ int wmain(int argc, wchar_t* argv[])
     auto env_local = std::make_unique<Ort::Env>(OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, "OrtMT5");
     env = std::move(env_local);
 
-    const wchar_t* model_path = argv[1];
+    std::string arg_model_path = program.get<std::string>("--model_path");
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    std::wstring model_path_wstring = converter.from_bytes(arg_model_path.c_str());
+    const wchar_t* model_path = model_path_wstring.c_str();
 
     if (!std::filesystem::exists(model_path))
     {

@@ -1,7 +1,10 @@
 #include "onnxruntime_cxx_api.h"
+#include "sentencepiece_processor.h"
+#include "argparse/argparse.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
+#include <codecvt>
 #include <filesystem>
 #include <thread>
 #include <atomic>
