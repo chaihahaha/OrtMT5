@@ -4,7 +4,9 @@ onnxruntime mT5 translator
 ### Usage example:
 
 ```bash
-ortmt5 "path/to/mt5-ja_zh_beam_search.onnx" 128 1 8 1 1.1 1.1 < test_input_token_ids.txt
+ortmt5 --model_path="path/to/mt5-ja_zh_beam_search.onnx" --spm_tokenizer_path="path/to/vocabs_mc4.250000.100extra_sentencepiece.model" --max_length=128 --min_length=1 --num_beams=8 --num_return_sequences=1 --length_penalty=1.1 --repetition_penalty=1.1
+
+# or you can run the python script
 python test_sp.py
 ```
 
@@ -15,10 +17,14 @@ python test_sp.py
 mkdir build
 cd build
 # if win64
-cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64'
-# if win32
-cmake -A win32 .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x86'
-cmake --build .
+cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu'
+# win32 is not supported anymore
+```
+
+### SentencePiece Tokenizer Download Link:
+
+```bash
+https://console.cloud.google.com/storage/browser/t5-data/vocabs/mc4.250000.100extra
 ```
 
 ### Convert MT5 Model:
