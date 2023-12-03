@@ -8,6 +8,7 @@
 static std::atomic_bool atomic_printing{false};
 std::unique_ptr<Ort::Session> session = nullptr;
 std::unique_ptr<Ort::Env> env = nullptr;
+std::unique_ptr<sentencepiece::SentencePieceProcessor> sp = nullptr;
 static size_t num_input_nodes = 0;
 static int max_threads = -1;
 
@@ -28,11 +29,16 @@ void print_tensor(Ort::Value& tensor)
     Ort::TensorTypeAndShapeInfo ts = tensor.GetTensorTypeAndShapeInfo();
 
     const int32_t* el = tensor.GetTensorData<int32_t>();
+    std::vector<int> ids;
     for (size_t i = 0; i < ts.GetElementCount(); i++)
     {
-        std::cout << el[i] << " ";
+        //std::cout << el[i] << " ";
+        ids.push_back((int)el[i]);
     }
-    std::cout << std::endl;
+    std::string translated;
+    sp->Decode(ids, &translated);
+    std::cout << translated << std::endl;
+    //std::cout << std::endl;
     return;
 }
 
@@ -67,6 +73,7 @@ int main(int argc, char* argv[])
 {
     argparse::ArgumentParser program("OrtMT5");
     program.add_argument("--model_path").default_value(std::string("./mt5-ja_zh_beam_search.onnx"));
+    program.add_argument("--spm_tokenizer_path").default_value(std::string("./vocabs_mc4.250000.100extra_sentencepiece.model"));
     program.add_argument("--max_length").default_value(128).scan<'i', int>();
     program.add_argument("--min_length").default_value(1).scan<'i', int>();
     program.add_argument("--num_beams").default_value(4).scan<'i', int>();
@@ -86,6 +93,17 @@ int main(int argc, char* argv[])
             << "[num_beams] [num_return_sequences] [length_penalty] [repetition_penalty]`" << std::endl;
         return -1;
     }
+
+    std::string arg_tokenizer_path = program.get<std::string>("--spm_tokenizer_path");
+    if (!std::filesystem::exists(arg_tokenizer_path))
+    {
+        std::cout << "Incorrect tokenizer path" << std::endl;
+        return -1;
+    }
+    std::cout << "tokenizing" << std::endl;
+    sp = std::make_unique<sentencepiece::SentencePieceProcessor>();
+    sp->Load(arg_tokenizer_path);
+
     int32_t max_length_int;
     int32_t min_length_int;
     int32_t num_beams_int;
@@ -130,6 +148,7 @@ int main(int argc, char* argv[])
         std::cout << "Incorrect model path" << std::endl;
         return -1;
     }
+
     auto session_local = std::make_unique<Ort::Session>(*env, model_path, session_options);
     session = std::move(session_local);
 
@@ -180,30 +199,34 @@ int main(int argc, char* argv[])
     std::array<std::vector<Ort::Value>, MAX_ASYNC_RUNS> input_tensors_pool;
     std::array<std::vector<Ort::Value>, MAX_ASYNC_RUNS> output_tensors_pool;
 
-    int32_t input_length = -1;
-    int32_t input_value = -1;
+    //int32_t input_length = -1;
+    //int32_t input_value = -1;
+    std::string input_str;
 
     int scnt = 0;
-    while (std::cin >> input_length)
+    while (1)
     {
-        if (input_length <= 0)
-        {
-            std::cout << "invalid input, not a positive integer" << std::endl;
-            return -1;
-        }
-        std::vector<int32_t> py_input_ids{};
-        for (int i = 0; i < input_length; i++)
-        {
-            if (std::cin >> input_value)
-            {
-                py_input_ids.push_back(input_value);
-            }
-            else
-            {
-                std::cout << "invalid input, not a integer" << std::endl;
-                return -1;
-            }
-        }
+        std::getline(std::cin, input_str, '\n');
+        //if (input_length <= 0)
+        //{
+        //    std::cout << "invalid input, not a positive integer" << std::endl;
+        //    return -1;
+        //}
+        //std::vector<int32_t> py_input_ids{};
+        //for (int i = 0; i < input_length; i++)
+        //{
+        //    if (std::cin >> input_value)
+        //    {
+        //        py_input_ids.push_back(input_value);
+        //    }
+        //    else
+        //    {
+        //        std::cout << "invalid input, not a integer" << std::endl;
+        //        return -1;
+        //    }
+        //}
+        std::vector<int> py_input_ids;
+        sp->Encode(input_str, &py_input_ids).IgnoreError();
         
         Ort::Value max_length = Ort::Value::CreateTensor<int32_t>(memory_info, max_length_values.data(), max_length_values.size(),
             max_length_dims.data(), max_length_dims.size());

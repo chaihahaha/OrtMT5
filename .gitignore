@@ -39,3 +39,5 @@ __pycache__
 *.rar
 *.json
 *.pdb
+*.model
+*.vocab
