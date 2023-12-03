@@ -25,25 +25,20 @@ void clear_ortvalue_vector(OrtValue** a, size_t len)
 }
 std::wstring str2wstr(std::string s)
 {
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-    std::wstring ws = converter.from_bytes(s.c_str());
-    return ws;
+    icu::UnicodeString str = icu::UnicodeString::fromUTF8(icu::StringPiece(s.c_str()));
+    //std::cout << "unicode" << str << std::endl;
+    
+    int32_t requiredSize;
+    UErrorCode error = U_ZERO_ERROR;
+    
+    wchar_t buffer[8192];
+    u_strToWCS(buffer, 8192, NULL, str.getBuffer(), str.length(), &error);
+    std::wstring wstr(buffer);
+    //std::wcout << L"converted" << wstr << " " << requiredSize << std::endl;
+    return wstr;
 }
 
-std::string wstr2str(std::wstring ws)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    std::string s = converter.to_bytes(ws);
-    return s;
-}
-
-icu::UnicodeString to_ustr(std::string ws)
-{
-    icu::UnicodeString us(ws.c_str());
-    return us;
-}
-
-void print_tensor(Ort::Value& tensor)
+void print_translated(Ort::Value& tensor)
 {
     Ort::TensorTypeAndShapeInfo ts = tensor.GetTensorTypeAndShapeInfo();
 
@@ -52,33 +47,10 @@ void print_tensor(Ort::Value& tensor)
     for (size_t i = 0; i < ts.GetElementCount(); i++)
     {
         ids.push_back((int)el[i]);
-        std::cout << el[i] << ", " ;
     }
-    std::cout << std::endl;
     std::string translated;
     sp->Decode(ids, &translated);
-    const char* raw_translated = translated.c_str();
-    for (int i = 0; i < 4096; i++)
-    {
-        std::cout << (int)(unsigned char) raw_translated[i] << ", ";
-        if (raw_translated[i] == 0)
-            break;
-    }
-    std::cout << std::endl;
     icu::UnicodeString translated_ustr = icu::UnicodeString::fromUTF8(icu::StringPiece(translated.c_str()));
-    //char platform_char[4096];
-    ////translated_ustr.extract(0, translated_ustr.length(), platform_char, "cp936");
-    //for (int i = 0; i < 4096; i++)
-    //{
-    //    std::cout << (int)(unsigned char) platform_char[i] << ", ";
-    //    if (platform_char[i] == 0)
-    //        break;
-    //}
-    //std::cout << std::endl;
-    //auto status;
-    //icu::UConverter *conv = icu::ucnv_open("cp936", &status);
-    //ucnv_fromUChars(conv, 
-    std::cout << "printing platform char" << std::endl;
     std::cout << translated_ustr << std::endl;
     return;
 }
@@ -99,7 +71,7 @@ void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtS
     Ort::Value output_value(outputs[0]);
     if (status.IsOK())
     {
-        print_tensor(output_value);
+        print_translated(output_value);
     }
     else
     {
@@ -248,11 +220,11 @@ int main(int argc, char* argv[])
         input_us.toUTF8String(input_str);
 
         std::vector<int> py_input_ids = sp->EncodeAsIds(input_str);
-        for (int ii = 0; ii < py_input_ids.size(); ii++)
-        {
-            std::cout << py_input_ids[ii] << "," << std::endl;
-        }
-        std::cout << std::endl;
+        //for (int ii = 0; ii < py_input_ids.size(); ii++)
+        //{
+        //    std::cout << py_input_ids[ii] << "," << std::endl;
+        //}
+        //std::cout << std::endl;
         
         Ort::Value max_length = Ort::Value::CreateTensor<int32_t>(memory_info, max_length_values.data(), max_length_values.size(),
             max_length_dims.data(), max_length_dims.size());
