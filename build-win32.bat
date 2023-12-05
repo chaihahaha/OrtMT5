@@ -4,7 +4,7 @@ call %VS_DEV_CMD%
 cd /d %~dp0
 mkdir build
 cd build
-cmake .. -A win32 -DONNXRUNTIME_ROOTDIR="path/to/onnxruntime-win-x86"
+cmake .. -A win32
 cmake --build . --config Release
 xcopy Release\* ..\
 pause

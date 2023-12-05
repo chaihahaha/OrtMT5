@@ -18,7 +18,11 @@ mkdir build
 cd build
 # if win64
 cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu'
-# win32 is not supported anymore
+# if win32
+cmake .. -A win32 -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu-win32'
+
+cmake --build . --config Release
+xcopy Release/* path/to/install
 ```
 
 ### SentencePiece Tokenizer Download Link:
