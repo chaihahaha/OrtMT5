@@ -12,6 +12,68 @@ std::unique_ptr<sentencepiece::SentencePieceProcessor> sp = nullptr;
 static size_t num_input_nodes = 0;
 static int max_threads = -1;
 
+TranslatorSession::TranslatorSession(std::string model_path, std::string spm_tokenizer_path, int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty)
+{
+    if (!std::filesystem::exists(spm_tokenizer_path))
+    {
+        throw "Incorrect tokenizer path";
+    }
+    sp = std::make_unique<sentencepiece::SentencePieceProcessor>();
+    const auto spm_status = sp->Load(spm_tokenizer_path);
+
+    this->max_length = max_length;
+    this->min_length = min_length;
+    this->num_beams = num_beams;
+    this->num_return_sequences = num_return_sequences;
+    this->length_penalty = length_penalty;
+    this->repetition_penalty = repetition_penalty;
+
+    Ort::SessionOptions session_options;
+    max_threads = std::thread::hardware_concurrency();
+
+    session_options.SetIntraOpNumThreads(max_threads/2);
+    session_options.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
+    session_options.SetInterOpNumThreads(max_threads/2);
+    session_options.SetGraphOptimizationLevel(
+        GraphOptimizationLevel::ORT_ENABLE_ALL);
+
+    this->env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, "OrtMT5");
+
+#ifdef _WIN32
+    std::wstring model_path_wstring = str2wstr(model_path);
+    const wchar_t* model_path_wchar = model_path_wstring.c_str();
+#endif
+
+    if (!std::filesystem::exists(model_path))
+    {
+        throw "Incorrect model path";
+    }
+
+#ifdef _WIN32
+    this->session = std::make_unique<Ort::Session>(this->env, model_path_wchar, session_options);
+#else
+    this->session = std::make_unique<Ort::Session>(this->env, model_path.c_str(), session_options);
+#endif
+
+    num_input_nodes = session->GetInputCount();
+    this->input_node_names.reserve(num_input_nodes);
+
+    // iterate over all input nodes
+    for (size_t i = 0; i < num_input_nodes; i++)
+    {
+        Ort::AllocatedStringPtr input_name = this->session->GetInputNameAllocated(i, this->allocator);
+        this->input_node_names.push_back(std::string(input_name.get()));
+    }
+
+    this->memory_info = this->allocator.GetInfo();
+
+}
+
+std::string TranslatorSession::translate(std::string input_raw)
+{
+    return "";
+}
+
 void clear_ortvalue_vector(OrtValue** a, size_t len)
 {
 #ifdef DEBUG
@@ -55,7 +117,7 @@ void print_translated(Ort::Value& tensor)
     return;
 }
 
-void AsyncCallback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr)
+void async_callback(void* user_data, OrtValue** outputs, size_t num_outputs, OrtStatusPtr status_ptr)
 {
     std::chrono::duration<double, std::milli> dur{1};
     // timeout in about 10 secs
@@ -169,7 +231,6 @@ int main(int argc, char* argv[])
     std::vector<Ort::AllocatedStringPtr> input_names_ptr;
     std::vector<const char*> input_node_names;
     input_node_names.reserve(num_input_nodes);
-    std::vector<int64_t> input_node_dims;
 
     // iterate over all input nodes
     for (size_t i = 0; i < num_input_nodes; i++) {
@@ -282,7 +343,7 @@ int main(int argc, char* argv[])
             output_names.data(),
             output_tensors_pool[scnt].data(),
             output_names.size(),
-            AsyncCallback,
+            async_callback,
             nullptr
             );
         scnt = (scnt + 1) % MAX_ASYNC_RUNS;
