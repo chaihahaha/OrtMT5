@@ -71,7 +71,8 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
     ADD_DEFINITIONS(-DRELEASE)
 endif()
 
-add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h")
+add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h" "utils.cpp" "utils.h")
+add_library(ortmtlib SHARED "OrtMTLib.cpp" "OrtMTLib.h" "utils.cpp" "utils.h")
 
 #if(MSVC)
 #    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")
@@ -79,7 +80,9 @@ add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h")
 #endif()
 
 target_link_libraries(ortmt5 PRIVATE onnxruntime sentencepiece icuuc icuio Threads::Threads)
+target_link_libraries(ortmtlib PRIVATE onnxruntime sentencepiece icuuc icuio Threads::Threads)
 target_compile_features(ortmt5 PRIVATE cxx_std_17)
+target_compile_features(ortmtlib PRIVATE cxx_std_17)
 #In onnxruntime deafault install path, the required dlls are in lib and bin folders
 if (is_x64)
     set(DLL_DIRS "${ONNXRUNTIME_ROOTDIR}/lib;${ONNXRUNTIME_ROOTDIR}/bin;${SENTENCEPIECE_ROOTDIR}/lib;${SENTENCEPIECE_ROOTDIR}/bin;${ICU_ROOTDIR}/bin64")
@@ -91,8 +94,12 @@ foreach(DLL_DIR IN LISTS DLL_DIRS)
   file(GLOB ALL_DLLS ${DLL_DIR}/*.dll)
   foreach(ORTDll IN LISTS ALL_DLLS)
     add_custom_command(TARGET ortmt5 POST_BUILD 
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different
-				"${ORTDll}"              
-				$<TARGET_FILE_DIR:ortmt5>)
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${ORTDll}"              
+                $<TARGET_FILE_DIR:ortmt5>)
+    add_custom_command(TARGET ortmtlib POST_BUILD 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${ORTDll}"              
+                $<TARGET_FILE_DIR:ortmtlib>)
   endforeach()
 endforeach()
