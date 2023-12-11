@@ -34,6 +34,7 @@
 *.data
 *.onnx
 build
+bin
 __pycache__
 *.zip
 *.rar
@@ -41,3 +42,4 @@ __pycache__
 *.pdb
 *.model
 *.vocab
+*.exp
