@@ -4,8 +4,9 @@ set ARCH="amd64"
 call %VS_DEV_CMD% -arch=%ARCH%
 cd /d %~dp0
 mkdir build
+mkdir bin
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
-xcopy Debug\* ..\
+xcopy Debug\* ..\bin
 pause

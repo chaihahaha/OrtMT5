@@ -1,7 +1,5 @@
 #include "OrtMT5.h"
 
-#pragma comment(lib, "onnxruntime.lib")
-
 #define MAX_ASYNC_RUNS 6000
 
 //static std::atomic_int thread_cnt{0};

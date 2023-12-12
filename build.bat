@@ -4,8 +4,9 @@ set ARCH="amd64"
 call %VS_DEV_CMD% -arch=%ARCH%
 cd /d %~dp0
 mkdir build
+mkdir bin
 cd build
 cmake ..
 cmake --build . --config Release
-xcopy Release\* ..\
+xcopy Release\* ..\bin
 pause
