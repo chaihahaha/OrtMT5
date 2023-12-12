@@ -71,14 +71,13 @@ extern "C"
         sentencepiece::SentencePieceProcessor* sp = reinterpret_cast<sentencepiece::SentencePieceProcessor*>(sp_py);
 
         std::string input_raw(in);
-        std::cout << "starting translate" << std::endl;
         std::vector<int> input_ids = sp->EncodeAsIds(input_raw);
-        std::cout << "encode to ids" << std::endl;
-        for (int ii = 0; ii < input_ids.size(); ii++)
-        {
-            std::cout << input_ids[ii] << "," << std::endl;
-        }
-        std::cout << std::endl;
+        //std::cout << "encode to ids" << std::endl;
+        //for (int ii = 0; ii < input_ids.size(); ii++)
+        //{
+        //    std::cout << input_ids[ii] << "," << std::endl;
+        //}
+        //std::cout << std::endl;
         std::vector<int64_t> one = {1};
         
         Ort::AllocatorWithDefaultOptions allocator;
@@ -95,7 +94,6 @@ extern "C"
                 one.data(), 1);
         Ort::Value repetition_penalty_tensor = Ort::Value::CreateTensor<float>(memory_info, &repetition_penalty, 1,
                 one.data(), 1);
-        std::cout << "consts:" << max_length << " " << min_length << " " << num_beams << " " << num_return_sequences << " " << length_penalty << " " << repetition_penalty << " " << std::endl;
 
 
         std::vector<int64_t> input_ids_dims{1, (int64_t)input_ids.size()};
@@ -115,7 +113,6 @@ extern "C"
         std::vector<char*> input_node_names, output_node_names;
         size_t num_input_nodes = session->GetInputCount();
         input_node_names.reserve(num_input_nodes);
-        std::cout << "get input count" << std::endl;
 
         // iterate over all input nodes
         for (size_t i = 0; i < num_input_nodes; i++)
@@ -123,7 +120,6 @@ extern "C"
             Ort::AllocatedStringPtr input_name = session->GetInputNameAllocated(i, allocator);
             input_node_names.push_back(input_name.get());
         }
-        std::cout << "get input names" << std::endl;
 
         size_t num_output_nodes = session->GetOutputCount();
         output_node_names.reserve(num_output_nodes);
@@ -135,8 +131,10 @@ extern "C"
             output_node_names.push_back(output_name.get());
         }
 
-        std::cout << "prepared input name: " << input_node_names[0] << " " << output_node_names.size() << std::endl;
-        std::cout << "prepared output name: " << output_node_names[0] << " " << output_node_names.size() << std::endl;
+        for (int i=0; i < input_node_names.size(); i++)
+        {
+            std::cout << "input name: " << input_node_names[i] << std::endl;
+        }
 
         std::vector<Ort::Value> output_tensors = session->Run(
             Ort::RunOptions{nullptr},
@@ -146,7 +144,6 @@ extern "C"
             output_node_names.data(),
             output_node_names.size()
             );
-        std::cout << "run session" << std::endl;
         std::vector<int> output_ids = decode_ortvalue(output_tensors[0]);
         std::string translated_str;
         sp->Decode(output_ids, &translated_str);

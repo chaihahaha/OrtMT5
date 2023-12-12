@@ -19,6 +19,6 @@ session = ctypes.c_void_p(dll.create_ort_session(model_path))
 sp = ctypes.c_void_p(dll.create_sp_tokenizer(spm_path))
 
 input_str = ctypes.c_char_p(bytes("<ja2zh>愛いしでる\0", "utf8"))
-output_str = dll.run_translate(session, sp, input_str, max_length,min_length,num_beams,num_return_sequences,length_penalty,repetition_penalty)
+output_str = ctypes.c_char_p(dll.run_translate(session, sp, input_str, max_length,min_length,num_beams,num_return_sequences,length_penalty,repetition_penalty))
 print("translation finished:")
-print(bytes(output_str).decode("utf8"))
+print(output_str.value.decode("utf8"))
