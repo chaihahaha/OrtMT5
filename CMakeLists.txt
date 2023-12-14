@@ -51,6 +51,7 @@ include_directories("${ONNXRUNTIME_ROOTDIR}/include" "${ONNXRUNTIME_ROOTDIR}/inc
 include_directories("${SENTENCEPIECE_ROOTDIR}/include")
 include_directories("${ARGPARSE_ROOTDIR}/include")
 include_directories("${ICU_ROOTDIR}/include")
+#include_directories("${CMAKE_CURRENT_SOURCE_DIR}/json/include")
 link_directories("${ONNXRUNTIME_ROOTDIR}/lib")
 link_directories("${SENTENCEPIECE_ROOTDIR}/lib")
 if (is_x64)

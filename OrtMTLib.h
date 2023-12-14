@@ -3,12 +3,15 @@
 #include "sentencepiece_processor.h"
 #include <vector>
 #include <string>
+#include <cstring>
 #include <filesystem>
-#include <new>
 #include <iostream>
+#include <stdlib.h>
 #include <unicode/unistr.h>
 #include <unicode/ustring.h>
 #include <unicode/ustream.h>
+//#include <nlohmann/json.hpp>
+
 std::vector<int> decode_ortvalue(Ort::Value& tensor);
 extern "C"
 {
