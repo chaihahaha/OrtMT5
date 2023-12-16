@@ -83,7 +83,7 @@ for i in range(num_input_nodes.value):
 
 sp = ctypes.c_void_p(dll.create_sp_tokenizer(spm_path))
 
-input_str = ctypes.c_char_p(bytes("<ja2zh>愛いしでる\0", "utf8"))
+input_str = ctypes.c_char_p(bytes("<ja2zh>愛してる\0", "utf8"))
 token_ids = ctypes.POINTER(ctypes.c_int)()
 n_tokens = ctypes.c_size_t()
 decoded_str = ctypes.c_char_p()
@@ -96,6 +96,11 @@ dll.encode_as_ids(
 
 output_ids = ctypes.POINTER(ctypes.c_int)()
 output_len = ctypes.c_size_t()
+print("input ids:")
+for i in range(n_tokens.value):
+    print(token_ids[i], end=', ')
+print()
+
 dll.run_session(
         ort_api,
         session,
@@ -112,6 +117,7 @@ dll.run_session(
         ctypes.byref(output_ids),
         ctypes.byref(output_len)
         )
+print("output ids:")
 for i in range(output_len.value):
     print(output_ids[i], end=", ")
 print()
