@@ -3,14 +3,15 @@
 
 extern "C"
 {
-    __declspec(dllexport) void* create_ort_api()
+    __declspec(dllexport) int create_ort_api(const void** ort_api_py)
     {
-        OrtApi* g_ort = (OrtApi*) OrtGetApiBase()->GetApi(ORT_API_VERSION);
-        return g_ort;
+        const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+        *ort_api_py = g_ort;
+        return 0;
     }
-    __declspec(dllexport) void* create_ort_session(void* g_ort_py, char* model_path_char, POINTER_c_char_p* input_names, size_t* num_input_nodes, POINTER_c_char_p* output_names, size_t* num_output_nodes)
+    __declspec(dllexport) int create_ort_session(const void* g_ort_py, char* model_path_char, POINTER_c_char_p* input_names, size_t* num_input_nodes, POINTER_c_char_p* output_names, size_t* num_output_nodes, void** env_py, void** session_py)
     {
-        OrtApi* g_ort = reinterpret_cast<OrtApi*>(g_ort_py);
+        const OrtApi* g_ort = reinterpret_cast<const OrtApi*>(g_ort_py);
         std::string model_path(model_path_char);
 
         OrtEnv* env;
@@ -34,35 +35,37 @@ extern "C"
 #else
         ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path.c_str(), session_options, &session));
 #endif
-        ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, num_input_nodes));
-        ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, num_output_nodes));
+        *session_py = session;
+        *env_py = env;
+        //ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, num_input_nodes));
+        //ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, num_output_nodes));
 
-        OrtAllocator* allocator;
-        ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
+        //OrtAllocator* allocator;
+        //ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
 
-        std::vector<char*> input_names_list;
-        // iterate over all input nodes
-        for (size_t i = 0; i < *num_input_nodes; i++)
-        {
-            char* input_name;
-            ORT_ABORT_ON_ERROR(g_ort->SessionGetInputName(session, i, allocator, &input_name));
-            input_names_list.push_back(input_name);
-        }
-        *input_names = input_names_list.data();
+        //std::vector<char*> input_names_list;
+        //// iterate over all input nodes
+        //for (size_t i = 0; i < *num_input_nodes; i++)
+        //{
+        //    char* input_name;
+        //    ORT_ABORT_ON_ERROR(g_ort->SessionGetInputName(session, i, allocator, &input_name));
+        //    input_names_list.push_back(input_name);
+        //}
+        //*input_names = input_names_list.data();
 
-        std::vector<char*> output_names_list;
-        // iterate over all input nodes
-        for (size_t i = 0; i < *num_output_nodes; i++)
-        {
-            char* output_name;
-            ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputName(session, i, allocator, &output_name));
-            output_names_list.push_back(output_name);
-        }
-        *output_names = output_names_list.data();
-        return session;
+        //std::vector<char*> output_names_list;
+        //// iterate over all input nodes
+        //for (size_t i = 0; i < *num_output_nodes; i++)
+        //{
+        //    char* output_name;
+        //    ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputName(session, i, allocator, &output_name));
+        //    output_names_list.push_back(output_name);
+        //}
+        //*output_names = output_names_list.data();
+        return 0;
     }
 
-    __declspec(dllexport) void* create_sp_tokenizer(char* spm_tokenizer_path_char)
+    __declspec(dllexport) int create_sp_tokenizer(char* spm_tokenizer_path_char, void** sp_py)
     {
         std::string spm_tokenizer_path(spm_tokenizer_path_char);
         if (!std::filesystem::exists(spm_tokenizer_path))
@@ -71,7 +74,8 @@ extern "C"
         }
         sentencepiece::SentencePieceProcessor* sp = new sentencepiece::SentencePieceProcessor();
         const auto spm_status = sp->Load(spm_tokenizer_path);
-        return sp;
+        *sp_py = sp;
+        return 0;
     }
 
     __declspec(dllexport) void encode_as_ids(void* sp_py, char* input_char, int** token_ids, size_t* n_tokens)
@@ -108,14 +112,15 @@ extern "C"
     //    return 0;
     //}
 
-    __declspec(dllexport) void run_session(void* g_ort_py, void* session_py, int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
+    __declspec(dllexport) int run_session(const void* g_ort_py, void* session_py, int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
     {
-        OrtApi* g_ort = reinterpret_cast<OrtApi*>(g_ort_py);
+        const OrtApi* g_ort = reinterpret_cast<const OrtApi*>(g_ort_py);
         OrtSession* session = reinterpret_cast<OrtSession*>(session_py);
         OrtAllocator* allocator;
         ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
-        OrtMemoryInfo* memory_info;
-        ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
+        const OrtMemoryInfo* memory_info;
+        //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
+        ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
 
         std::vector<int64_t> one = {1};
 
@@ -187,6 +192,8 @@ extern "C"
         input_tensors.push_back(length_penalty_tensor);
         input_tensors.push_back(repetition_penalty_tensor);
 
+        //g_ort->ReleaseMemoryInfo(memory_info);
+
         ////////// copied from create_session
         size_t num_input_nodes, num_output_nodes;
         ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, &num_input_nodes));
@@ -228,6 +235,15 @@ extern "C"
         int* output_ids;
         ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(output_tensor, (void**)&output_ids));
         *output_ids_raw = output_ids;
-        return;
+
+        for (int i = 0; i < input_tensors.size(); i++)
+        {
+            g_ort->ReleaseValue(input_tensors[i]);
+        }
+        g_ort->ReleaseValue(output_tensor);
+        std::cout << "released values" << std::endl;
+        //g_ort->ReleaseAllocator(allocator);
+        g_ort->ReleaseTensorTypeAndShapeInfo(info);
+        return 0;
     }
 }
