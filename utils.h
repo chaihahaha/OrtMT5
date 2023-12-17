@@ -1,6 +1,3 @@
-#include <unicode/unistr.h>
-#include <unicode/ustring.h>
-#include <unicode/ustream.h>
 #include <iostream>
 #include <vector>
 #include <string>

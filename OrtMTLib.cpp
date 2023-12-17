@@ -3,20 +3,23 @@
 
 extern "C"
 {
-    __declspec(dllexport) int create_ort_api(const void** ort_api_py)
+    const OrtApi* g_ort = nullptr;
+    OrtEnv* env = nullptr;
+    OrtSession* session = nullptr;
+    OrtSessionOptions* session_options = nullptr;
+    OrtAllocator* allocator = nullptr;
+    const OrtMemoryInfo* memory_info = nullptr;
+
+    __declspec(dllexport) int create_ort_api(void)
     {
-        const OrtApi* g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
-        *ort_api_py = g_ort;
+        g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
         return 0;
     }
-    __declspec(dllexport) int create_ort_session(const void* g_ort_py, char* model_path_char, POINTER_c_char_p* input_names, size_t* num_input_nodes, POINTER_c_char_p* output_names, size_t* num_output_nodes, void** env_py, void** session_py)
+    __declspec(dllexport) int create_ort_session(char* model_path_char)
     {
-        const OrtApi* g_ort = reinterpret_cast<const OrtApi*>(g_ort_py);
         std::string model_path(model_path_char);
 
-        OrtEnv* env;
         ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_ERROR, "OrtMTLib", &env));
-        OrtSessionOptions* session_options;
         ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&session_options));
 
 #ifdef _WIN32
@@ -26,17 +29,15 @@ extern "C"
 
         if (!std::filesystem::exists(model_path))
         {
-            throw "Incorrect model path";
+            std::cout << "Incorrect model path" << std::endl;
+            return -1;
         }
 
-        OrtSession* session;
 #ifdef _WIN32
         ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path_wchar, session_options, &session));
 #else
         ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path.c_str(), session_options, &session));
 #endif
-        *session_py = session;
-        *env_py = env;
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, num_input_nodes));
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, num_output_nodes));
 
@@ -64,61 +65,9 @@ extern "C"
         //*output_names = output_names_list.data();
         return 0;
     }
-
-    __declspec(dllexport) int create_sp_tokenizer(char* spm_tokenizer_path_char, void** sp_py)
+    __declspec(dllexport) int run_session(int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
     {
-        std::string spm_tokenizer_path(spm_tokenizer_path_char);
-        if (!std::filesystem::exists(spm_tokenizer_path))
-        {
-            throw "Incorrect tokenizer path";
-        }
-        sentencepiece::SentencePieceProcessor* sp = new sentencepiece::SentencePieceProcessor();
-        const auto spm_status = sp->Load(spm_tokenizer_path);
-        *sp_py = sp;
-        return 0;
-    }
-
-    __declspec(dllexport) void encode_as_ids(void* sp_py, char* input_char, int** token_ids, size_t* n_tokens)
-    {
-        sentencepiece::SentencePieceProcessor* sp = reinterpret_cast<sentencepiece::SentencePieceProcessor*>(sp_py);
-        std::string input_raw(input_char);
-        std::vector<int> input_ids = sp->EncodeAsIds(input_raw);
-        *token_ids = input_ids.data();
-        *n_tokens = input_ids.size();
-        //std::cout << "encode to ids" << std::endl;
-        //for (int ii = 0; ii < input_ids.size(); ii++)
-        //{
-        //    std::cout << input_ids[ii] << "," << std::endl;
-        //}
-        //std::cout << std::endl;
-        return;
-    }
-
-    __declspec(dllexport) void decode_from_ids(void* sp_py, int* output_ids_raw, size_t n_tokens, char** output_char)
-    {
-        sentencepiece::SentencePieceProcessor* sp = reinterpret_cast<sentencepiece::SentencePieceProcessor*>(sp_py);
-        std::vector<int> output_ids(output_ids_raw, output_ids_raw + n_tokens);
-        std::string translated_str;
-        sp->Decode(output_ids, &translated_str);
-        *output_char = (char*) translated_str.c_str();
-        return;
-    }
-     
-
-
-    //__declspec(dllexport) int delete_ptr(void* ptr)
-    //{
-    //    delete ptr;
-    //    return 0;
-    //}
-
-    __declspec(dllexport) int run_session(const void* g_ort_py, void* session_py, int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
-    {
-        const OrtApi* g_ort = reinterpret_cast<const OrtApi*>(g_ort_py);
-        OrtSession* session = reinterpret_cast<OrtSession*>(session_py);
-        OrtAllocator* allocator;
         ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
-        const OrtMemoryInfo* memory_info;
         //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
         ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
 
@@ -235,6 +184,11 @@ extern "C"
         int* output_ids;
         ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(output_tensor, (void**)&output_ids));
         *output_ids_raw = output_ids;
+        //for (int i = 0; i < *output_len; i++)
+        //{
+        //    std::cout << output_ids[i] << ", ";
+        //}
+        //std::cout << std::endl;
 
         for (int i = 0; i < input_tensors.size(); i++)
         {
@@ -246,4 +200,22 @@ extern "C"
         g_ort->ReleaseTensorTypeAndShapeInfo(info);
         return 0;
     }
+
+    __declspec(dllexport) int delete_ptr(void* ptr)
+    {
+        delete ptr;
+        return 0;
+    }
+}
+
+int main()
+{
+    create_ort_api();
+    create_ort_session("../mt5-ja_zh_beam_search.onnx");
+    std::vector<int> input_ids = {1042, 462, 338, 12001, 669, 14942, 43556};
+    int* output_ids;
+    size_t output_len;
+    run_session(128, 1, 1, 1, (float)1.3, (float)1.3, input_ids.data(), input_ids.size(), &output_ids, &output_len);
+    std::cout << "finished inference" << std::endl;
+    return 0;
 }
