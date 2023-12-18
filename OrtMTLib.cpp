@@ -21,6 +21,8 @@ extern "C"
 
         ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_ERROR, "OrtMTLib", &env));
         ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&session_options));
+        ORT_ABORT_ON_ERROR(g_ort->SetSessionGraphOptimizationLevel(session_options, ORT_DISABLE_ALL));
+        g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL);
 
 #ifdef _WIN32
         std::wstring model_path_wstring = str2wstr(model_path);
@@ -38,6 +40,9 @@ extern "C"
 #else
         ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path.c_str(), session_options, &session));
 #endif
+        ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
+        //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
+        ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, num_input_nodes));
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, num_output_nodes));
 
@@ -67,9 +72,6 @@ extern "C"
     }
     __declspec(dllexport) int run_session(int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
     {
-        ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
-        //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
-        ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
 
         std::vector<int64_t> one = {1};
 
@@ -196,14 +198,17 @@ extern "C"
         }
         g_ort->ReleaseValue(output_tensor);
         std::cout << "released values" << std::endl;
-        //g_ort->ReleaseAllocator(allocator);
         g_ort->ReleaseTensorTypeAndShapeInfo(info);
         return 0;
     }
 
-    __declspec(dllexport) int delete_ptr(void* ptr)
+    __declspec(dllexport) int release()
     {
-        delete ptr;
+        //g_ort->ReleaseMemoryInfo((OrtMemoryInfo*)memory_info);
+        g_ort->ReleaseAllocator(allocator);
+        g_ort->ReleaseSessionOptions(session_options);
+        g_ort->ReleaseSession(session);
+        g_ort->ReleaseEnv(env);
         return 0;
     }
 }

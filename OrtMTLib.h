@@ -27,7 +27,7 @@ extern "C"
 {
     __declspec(dllexport) int create_ort_api(void);
     __declspec(dllexport) int create_ort_session(char* model_path_char);
-    __declspec(dllexport) int delete_ptr(void* ptr);
+    __declspec(dllexport) int release(void);
  
     __declspec(dllexport) int run_session(int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len);
 }
