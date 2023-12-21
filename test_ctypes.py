@@ -49,7 +49,7 @@ ortmtlib.run_session.argtypes=(
         ctypes.c_float,
         ctypes.c_float,
 
-        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int32),
         ctypes.c_size_t,
         ctypes.POINTER(ctypes.POINTER(ctypes.c_int)),
         ctypes.POINTER(ctypes.c_size_t)
@@ -80,7 +80,7 @@ res = splib.create_sp_tokenizer(spm_path)
 print("create sp?", res)
 
 input_str = ctypes.c_char_p(bytes("<ja2zh>愛してる\0", "utf8"))
-token_ids = ctypes.POINTER(ctypes.c_int)()
+token_ids = ctypes.POINTER(ctypes.c_int32)()
 n_tokens = ctypes.c_size_t()
 #token_ids = (ctypes.c_int * 7)(1042, 462, 338, 12001, 669, 14942, 43556)
 #n_tokens = ctypes.c_size_t(7)

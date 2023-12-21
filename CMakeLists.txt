@@ -76,7 +76,8 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 endif()
 
 add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h" "utils.cpp" "utils.h")
-add_library(ortmtlib SHARED "OrtMTLib.cpp" "OrtMTLib.h" "utils.cpp" "utils.h")
+#add_executable(ortmtlib "OrtMTLib.cc" "OrtMTLib.h")
+add_library(ortmtlib SHARED "OrtMTLib.cc" "OrtMTLib.h")
 add_library(splib SHARED "SpLib.cpp" "SpLib.h")
 #add_executable(ortmtlib "OrtMTLib.cpp" "OrtMTLib.h" "utils.cpp" "utils.h")
 
@@ -90,7 +91,7 @@ target_link_libraries(ortmt5 PRIVATE onnxruntime sentencepiece icuuc icuio Threa
 target_link_libraries(ortmtlib PRIVATE onnxruntime icuuc icuio Threads::Threads)
 target_link_libraries(splib PRIVATE sentencepiece Threads::Threads)
 target_compile_features(ortmt5 PRIVATE cxx_std_17)
-target_compile_features(ortmtlib PRIVATE cxx_std_17)
+target_compile_features(ortmtlib PRIVATE c_std_11)
 target_compile_features(splib PRIVATE cxx_std_17)
 target_link_options(ortmtlib PUBLIC "/MAP")
 #In onnxruntime deafault install path, the required dlls are in lib and bin folders
