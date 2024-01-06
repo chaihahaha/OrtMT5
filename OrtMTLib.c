@@ -7,13 +7,13 @@
 //OrtSessionOptions* session_options = NULL;
 //OrtMemoryInfo* memory_info = NULL;
 
-int create_ort_session(char* model_path_char)
+int create_ort_session(char* model_path_char, int n_threads)
 {
     g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
     ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_ERROR, "OrtMTLib", &env));
     ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&session_options));
-    //ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(session_options, 1));
-    //ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(session_options, 1));
+    ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(session_options, n_threads));
+    ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(session_options, n_threads));
     ORT_ABORT_ON_ERROR(g_ort->SetSessionGraphOptimizationLevel(session_options, ORT_ENABLE_ALL));
     g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL);
 
