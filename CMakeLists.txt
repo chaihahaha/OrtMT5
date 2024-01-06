@@ -76,10 +76,8 @@ if (CMAKE_BUILD_TYPE STREQUAL Release)
 endif()
 
 add_executable(ortmt5 "OrtMT5.cpp" "OrtMT5.h" "utils.cpp" "utils.h")
-#add_executable(ortmtlib "OrtMTLib.cc" "OrtMTLib.h")
-add_library(ortmtlib SHARED "OrtMTLib.cc" "OrtMTLib.h")
+add_library(ortmtlib SHARED "OrtMTLib.c" "OrtMTLib.h")
 add_library(splib SHARED "SpLib.cpp" "SpLib.h")
-#add_executable(ortmtlib "OrtMTLib.cpp" "OrtMTLib.h" "utils.cpp" "utils.h")
 
 #if(MSVC)
 #    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:utf-8>")

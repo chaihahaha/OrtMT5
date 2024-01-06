@@ -1,8 +1,9 @@
-#include "windows.h"
 #include "onnxruntime_c_api.h"
 #include <stdlib.h>
 #include <stdio.h>
-//#include <nlohmann/json.hpp>
+#include <wchar.h>
+#include <string.h>
+
 #define ORT_ABORT_ON_ERROR(expr)                             \
   do {                                                       \
     OrtStatus* onnx_status = (expr);                         \
@@ -16,19 +17,19 @@
 
 typedef char** POINTER_c_char_p;
 
-extern "C"
-{
-extern    __declspec(dllexport) const OrtApi* g_ort;
-extern    __declspec(dllexport) OrtEnv* env;
-extern    __declspec(dllexport) OrtSession* session;
-extern    __declspec(dllexport) OrtSessionOptions* session_options;
-extern    __declspec(dllexport) OrtAllocator* allocator;
-extern    __declspec(dllexport) OrtMemoryInfo* memory_info;
+__declspec(dllexport) const OrtApi* g_ort;
+__declspec(dllexport) OrtEnv* env;
+__declspec(dllexport) OrtSession* session;
+__declspec(dllexport) OrtSessionOptions* session_options;
+__declspec(dllexport) OrtAllocator* allocator;
+__declspec(dllexport) const OrtMemoryInfo* memory_info;
 
-    __declspec(dllexport) int WINAPI create_ort_api(void);
-    __declspec(dllexport) int WINAPI create_ort_session(char* model_path_char);
-    __declspec(dllexport) int WINAPI release(void);
- 
-    __declspec(dllexport) int WINAPI run_session(int32_t max_length, int32_t min_length, int32_t num_beams, int32_t num_return_sequences, float length_penalty, float repetition_penalty, int32_t* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len);
-    __declspec(dllexport) int run_session_decoder(void);
-}
+__declspec(dllexport) int create_ort_session(char* model_path_char);
+__declspec(dllexport) int release(void);
+__declspec(dllexport) int create_tensor_float(float* tensor_data, size_t data_len, int64_t* shape, size_t shape_len, void** tensor);
+__declspec(dllexport) int create_tensor_int32(int32_t* tensor_data, size_t data_len, int64_t* shape, size_t shape_len, void** tensor);
+__declspec(dllexport) size_t get_input_count(void);
+__declspec(dllexport) size_t get_output_count(void);
+__declspec(dllexport) int print_tensor_int32(void* tensor);
+
+__declspec(dllexport) int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t* output_len);
