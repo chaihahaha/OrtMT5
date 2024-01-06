@@ -40,10 +40,10 @@ from huggingface_hub import snapshot_download
 snapshot_download(repo_id="larryvrh/mt5-translation-ja_zh")
 ```
 
-Second, clone onnxruntime repo:
+Second, install onnxruntime:
 
 ```
-git clone https://github.com/microsoft/onnxruntime
+pip install onnxruntime
 ```
 
 Finally, run the commands to convert model to int8 quantized onnx:
