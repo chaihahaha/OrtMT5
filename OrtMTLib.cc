@@ -7,8 +7,8 @@
     OrtEnv* env = NULL;
     OrtSession* session = NULL;
     OrtSessionOptions* session_options = NULL;
-    OrtAllocator* allocator = NULL;
-    const OrtMemoryInfo* memory_info = NULL;
+    //OrtAllocator* allocator = NULL;
+    OrtMemoryInfo* memory_info = NULL;
 
     int create_ort_api(void)
     {
@@ -20,6 +20,8 @@
 
         ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_ERROR, "OrtMTLib", &env));
         ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&session_options));
+        ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(session_options, 1));
+        ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(session_options, 1));
         ORT_ABORT_ON_ERROR(g_ort->SetSessionGraphOptimizationLevel(session_options, ORT_DISABLE_ALL));
         g_ort->SetSessionExecutionMode(session_options, ORT_SEQUENTIAL);
 
@@ -28,9 +30,10 @@
         MultiByteToWideChar(CP_ACP, 0, model_path_char, -1, model_path_wchar, bufsize);
 
         ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path_wchar, session_options, &session));
-        ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
-        //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
-        ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
+        printf("create session successful");
+        //ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
+        ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
+        //ORT_ABORT_ON_ERROR(g_ort->AllocatorGetInfo(allocator, &memory_info));
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, num_input_nodes));
         //ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, num_output_nodes));
 
@@ -39,7 +42,7 @@
 
         return 0;
     }
-    int run_session(int max_length, int min_length, int num_beams, int num_return_sequences, float length_penalty, float repetition_penalty, int32_t* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
+    int run_session(int32_t max_length, int32_t min_length, int32_t num_beams, int32_t num_return_sequences, float length_penalty, float repetition_penalty, int32_t* input_ids_raw, size_t input_len, int** output_ids_raw, size_t* output_len)
     {
 
         int64_t* one = (int64_t*)malloc(sizeof(int64_t));
@@ -94,8 +97,13 @@
                 &repetition_penalty_tensor));
         
         int32_t* input_ids = (int32_t*)malloc(input_len * sizeof(int32_t));
+        printf("start raw printing\n");
         for (int i = 0; i < input_len; i++)
+        {
             input_ids[i] = input_ids_raw[i];
+            printf("%d, ", input_ids_raw[i]);
+        }
+        printf("\nfinish raw printing\n");
         int64_t* input_ids_dims = (int64_t*)malloc(2 * sizeof(int64_t));
         input_ids_dims[0] = 1;
         input_ids_dims[1] = input_len;
@@ -142,6 +150,12 @@
         output_dims[1] = 1;
         output_dims[2] = max_length;
         OrtValue* output_tensor = NULL;
+
+        int32_t* test_p;
+        ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(input_tensors[0], (void**)&test_p));
+        for (int i=0; i<7; i++)
+            printf("%d, ", test_p[i]);
+        printf("\nfinish ortvalue printing\n");
         
         ORT_ABORT_ON_ERROR(g_ort->Run(
                 session, NULL,
@@ -187,5 +201,6 @@ int main()
     size_t output_len;
         
     run_session(128, 1, 1, 1, (float)1.3, (float)1.3, (int*)&input_ids, 7, &output_ids, &output_len);
+    printf("run session successful");
     return 0;
 }

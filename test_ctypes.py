@@ -4,15 +4,15 @@ import gc
 import os
 
 gc.disable()
-ortmtlib = ctypes.CDLL("./ortmtlib.dll")
+ortmtlib = ctypes.WinDLL("./ortmtlib.dll")
 splib = ctypes.CDLL("./splib.dll")
 
-model_path = ctypes.c_char_p(bytes("test_opt.onnx",'utf8'))
+model_path = ctypes.c_char_p(bytes("mt5-ja_zh_beam_search.onnx",'utf8'))
 spm_path = ctypes.c_char_p(bytes("vocabs_mc4.250000.100extra_sentencepiece.model","utf8"))
-max_length = ctypes.c_int(128)
-min_length = ctypes.c_int(1)
-num_beams = ctypes.c_int(1)
-num_return_sequences = ctypes.c_int(1)
+max_length = ctypes.c_int32(128)
+min_length = ctypes.c_int32(1)
+num_beams = ctypes.c_int32(1)
+num_return_sequences = ctypes.c_int32(1)
 length_penalty = ctypes.c_float(1.3)
 repetition_penalty = ctypes.c_float(1.3)
 
@@ -93,9 +93,9 @@ res = splib.encode_as_ids(
         )
 print("encode as ids?", res)
 print("input ids:")
-for i in range(n_tokens.value):
-    print(token_ids[i], end=", ")
-print()
+input_ids_py = [token_ids[i] for i in range(n_tokens.value)]
+print(input_ids_py)
+input_ids_ctypes = (ctypes.c_int32 * len(input_ids_py))(*tuple(input_ids_py))
 
 output_ids = ctypes.POINTER(ctypes.c_int)()
 output_len = ctypes.c_size_t()
@@ -108,7 +108,7 @@ res = ortmtlib.run_session(
         length_penalty,
         repetition_penalty,
 
-        token_ids,
+        input_ids_ctypes,
         n_tokens,
         ctypes.byref(output_ids),
         ctypes.byref(output_len)
