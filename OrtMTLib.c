@@ -15,7 +15,11 @@ int create_ort_session(char* model_path_char, int n_threads)
     ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(session_options, n_threads));
     ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(session_options, n_threads));
     ORT_ABORT_ON_ERROR(g_ort->SetSessionGraphOptimizationLevel(session_options, ORT_ENABLE_ALL));
-    g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL);
+    ORT_ABORT_ON_ERROR(g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL));
+#ifdef USE_DML
+    OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0);
+#endif
+
 
     size_t model_path_len = strlen(model_path_char);
     size_t model_path_wlen;
@@ -24,7 +28,8 @@ int create_ort_session(char* model_path_char, int n_threads)
 
     ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path_wchar, session_options, &session));
 
-    ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
+    ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
+    ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
     memory_info = allocator->Info(allocator);
     return 0;
 }
@@ -104,10 +109,9 @@ int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t*
 
 int release()
 {
-    //g_ort->ReleaseMemoryInfo((OrtMemoryInfo*)memory_info);
-    //g_ort->ReleaseAllocator(allocator);
-    //g_ort->ReleaseSessionOptions(session_options);
-    //g_ort->ReleaseSession(session);
-    //g_ort->ReleaseEnv(env);
+    g_ort->ReleaseAllocator(allocator);
+    g_ort->ReleaseSessionOptions(session_options);
+    g_ort->ReleaseSession(session);
+    g_ort->ReleaseEnv(env);
     return 0;
 }

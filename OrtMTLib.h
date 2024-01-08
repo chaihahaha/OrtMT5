@@ -4,6 +4,10 @@
 #include <wchar.h>
 #include <string.h>
 
+#ifdef USE_DML
+#include "dml_provider_factory.h"
+#endif
+
 #define ORT_ABORT_ON_ERROR(expr)                             \
   do {                                                       \
     OrtStatus* onnx_status = (expr);                         \
@@ -14,8 +18,6 @@
       abort();                                               \
     }                                                        \
   } while (0);
-
-typedef char** POINTER_c_char_p;
 
 __declspec(dllexport) const OrtApi* g_ort;
 __declspec(dllexport) OrtEnv* env;
