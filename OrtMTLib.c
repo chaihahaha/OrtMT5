@@ -15,9 +15,13 @@ int create_ort_session(char* model_path_char, int n_threads)
     ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(session_options, n_threads));
     ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(session_options, n_threads));
     ORT_ABORT_ON_ERROR(g_ort->SetSessionGraphOptimizationLevel(session_options, ORT_ENABLE_ALL));
+#ifndef USE_DML
     ORT_ABORT_ON_ERROR(g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL));
+#endif
 #ifdef USE_DML
     OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0);
+    ORT_ABORT_ON_ERROR(g_ort->DisableMemPattern(session_options));
+    ORT_ABORT_ON_ERROR(g_ort->SetSessionExecutionMode(session_options, ORT_SEQUENTIAL));
 #endif
 
 
