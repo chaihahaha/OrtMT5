@@ -19,9 +19,9 @@ int create_ort_session(char* model_path_char, int n_threads)
     ORT_ABORT_ON_ERROR(g_ort->SetSessionExecutionMode(session_options, ORT_PARALLEL));
 #endif
 #ifdef USE_DML
-    OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0);
-    ORT_ABORT_ON_ERROR(g_ort->DisableMemPattern(session_options));
     ORT_ABORT_ON_ERROR(g_ort->SetSessionExecutionMode(session_options, ORT_SEQUENTIAL));
+    ORT_ABORT_ON_ERROR(g_ort->DisableMemPattern(session_options));
+    OrtSessionOptionsAppendExecutionProvider_DML(session_options, 0);
 #endif
 
 
@@ -32,8 +32,9 @@ int create_ort_session(char* model_path_char, int n_threads)
 
     ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path_wchar, session_options, &session));
 
-    ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
-    ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
+    //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtDeviceAllocator, OrtMemTypeDefault, &memory_info));
+    //ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
+    ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
     memory_info = allocator->Info(allocator);
     return 0;
 }
@@ -107,15 +108,23 @@ int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t*
     ORT_ABORT_ON_ERROR(g_ort->GetTensorShapeElementCount(info, output_len));
     int* output_ids;
     ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(output_tensor, (void**)&output_ids));
-    *output_ids_raw = output_ids;
+    size_t out_memlen = (*output_len) * sizeof(int);
+    *output_ids_raw = malloc(out_memlen);
+    memcpy(*output_ids_raw, output_ids, out_memlen);
     return 0;
 }
 
-int release()
+int release_all_globals()
 {
     g_ort->ReleaseAllocator(allocator);
     g_ort->ReleaseSessionOptions(session_options);
     g_ort->ReleaseSession(session);
     g_ort->ReleaseEnv(env);
+    return 0;
+}
+
+int release_ort_tensor(void* tensor)
+{
+    g_ort->ReleaseValue(tensor);
     return 0;
 }

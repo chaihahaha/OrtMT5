@@ -3,7 +3,6 @@ import time
 import gc
 import os
 
-gc.disable()
 ortmtlib = ctypes.CDLL("./ortmtlib.dll")
 splib = ctypes.CDLL("./splib.dll")
 
@@ -141,5 +140,6 @@ print("decode from ids?", res)
 
 print(decoded_str.value.decode("utf8"))
 print("translation finished")
-res = ortmtlib.release()
+
+res = ortmtlib.release_all_globals()
 print("release?", res)

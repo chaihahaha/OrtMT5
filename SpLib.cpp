@@ -20,14 +20,10 @@ extern "C"
     {
         std::string input_raw(input_char);
         std::vector<int> input_ids = sp->EncodeAsIds(input_raw);
-        *token_ids = input_ids.data();
+        size_t input_ids_memlen = input_ids.size() * sizeof(int);
+        *token_ids = (int*)malloc(input_ids_memlen);
+        memcpy(*token_ids, &input_ids.front(), input_ids_memlen);
         *n_tokens = input_ids.size();
-        //std::cout << "encode to ids" << std::endl;
-        //for (int ii = 0; ii < input_ids.size(); ii++)
-        //{
-        //    std::cout << input_ids[ii] << "," << std::endl;
-        //}
-        //std::cout << std::endl;
         return 0;
     }
 
@@ -36,7 +32,10 @@ extern "C"
         std::vector<int> output_ids(output_ids_raw, output_ids_raw + n_tokens);
         std::string translated_str;
         sp->Decode(output_ids, &translated_str);
-        *output_char = (char*) translated_str.c_str();
+        //*output_char = (char*) translated_str.c_str();
+        size_t strlen = translated_str.length();
+        *output_char = new char[strlen + 1];
+        strcpy(*output_char, translated_str.c_str());
         return 0;
     }
     
