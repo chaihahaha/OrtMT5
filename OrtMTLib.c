@@ -116,7 +116,6 @@ int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t*
 
 int release_all_globals()
 {
-    g_ort->ReleaseAllocator(allocator);
     g_ort->ReleaseSessionOptions(session_options);
     g_ort->ReleaseSession(session);
     g_ort->ReleaseEnv(env);

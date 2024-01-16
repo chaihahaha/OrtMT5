@@ -18,6 +18,7 @@ repetition_penalty = 1.3
 
 ortmtlib.create_ort_session.argtypes = (
         ctypes.c_char_p,
+        ctypes.c_int,
         )
 ortmtlib.create_ort_session.restype = ctypes.c_int
 
@@ -54,10 +55,10 @@ num_input_nodes = ctypes.c_size_t()
 output_names = ctypes.POINTER(ctypes.c_char_p)()
 num_output_nodes = ctypes.c_size_t()
 
-session = ctypes.c_void_p()
-env = ctypes.c_void_p()
+n_threads = ctypes.c_int(2)
 res = ortmtlib.create_ort_session(
     model_path,
+    n_threads
     )
 print("create ort session?", res)
 
@@ -140,6 +141,10 @@ print("decode from ids?", res)
 
 print(decoded_str.value.decode("utf8"))
 print("translation finished")
+
+for tp in input_tensors:
+    res = ortmtlib.release_ort_tensor(tp)
+    print(f"release {tp}? {res}")
 
 res = ortmtlib.release_all_globals()
 print("release?", res)
