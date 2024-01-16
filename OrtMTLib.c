@@ -1,12 +1,5 @@
 #include "OrtMTLib.h"
 
-
-//const OrtApi* g_ort = NULL;
-//OrtEnv* env = NULL;
-//OrtSession* session = NULL;
-//OrtSessionOptions* session_options = NULL;
-//OrtMemoryInfo* memory_info = NULL;
-
 int create_ort_session(char* model_path_char, int n_threads)
 {
     g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
@@ -36,6 +29,7 @@ int create_ort_session(char* model_path_char, int n_threads)
     //ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
     ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
     memory_info = allocator->Info(allocator);
+    free(model_path_wchar);
     return 0;
 }
 int create_tensor_float(float* tensor_data, size_t data_len, int64_t* shape, size_t shape_len, void** tensor)
@@ -111,6 +105,8 @@ int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t*
     size_t out_memlen = (*output_len) * sizeof(int);
     *output_ids_raw = malloc(out_memlen);
     memcpy(*output_ids_raw, output_ids, out_memlen);
+
+    free(input_names_list);
     return 0;
 }
 
@@ -125,5 +121,11 @@ int release_all_globals()
 int release_ort_tensor(void* tensor)
 {
     g_ort->ReleaseValue(tensor);
+    return 0;
+}
+
+int free_ptr(void* ptr)
+{
+    free(ptr);
     return 0;
 }

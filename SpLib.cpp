@@ -38,7 +38,10 @@ extern "C"
         strcpy(*output_char, translated_str.c_str());
         return 0;
     }
-    
 
-
+    __declspec(dllexport) int free_ptr(void* ptr)
+    {
+        free(ptr);
+        return 0;
+    }
 }

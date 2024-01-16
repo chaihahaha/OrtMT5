@@ -36,3 +36,4 @@ __declspec(dllexport) size_t get_output_count(void);
 __declspec(dllexport) int print_tensor_int32(void* tensor);
 
 __declspec(dllexport) int run_session(void** tensors, char* output_name, int** output_ids_raw, size_t* output_len);
+__declspec(dllexport) int free_ptr(void* ptr);

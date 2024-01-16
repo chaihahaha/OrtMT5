@@ -142,6 +142,12 @@ print("decode from ids?", res)
 print(decoded_str.value.decode("utf8"))
 print("translation finished")
 
+res = splib.free_ptr(decoded_str)
+print("freed decoded str")
+
+res = ortmtlib.free_ptr(output_ids)
+print("freed output ids")
+
 for tp in input_tensors:
     res = ortmtlib.release_ort_tensor(tp)
     print(f"release {tp}? {res}")
