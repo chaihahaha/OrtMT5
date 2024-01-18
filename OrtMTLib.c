@@ -25,10 +25,8 @@ int create_ort_session(char* model_path_char, int n_threads)
 
     ORT_ABORT_ON_ERROR(g_ort->CreateSession(env, model_path_wchar, session_options, &session));
 
-    //ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtDeviceAllocator, OrtMemTypeDefault, &memory_info));
-    //ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
-    ORT_ABORT_ON_ERROR(g_ort->GetAllocatorWithDefaultOptions(&allocator));
-    memory_info = allocator->Info(allocator);
+    ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtDeviceAllocator, OrtMemTypeDefault, &memory_info));
+    ORT_ABORT_ON_ERROR(g_ort->CreateAllocator(session, memory_info, &allocator));
     free(model_path_wchar);
     return 0;
 }

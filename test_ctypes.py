@@ -1,10 +1,10 @@
 import ctypes
 import time
-import gc
 import os
 
-ortmtlib = ctypes.CDLL("./ortmtlib.dll")
-splib = ctypes.CDLL("./splib.dll")
+ort = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath("./ortmtlib.dll")), "onnxruntime.dll"))
+ortmtlib = ctypes.CDLL(os.path.abspath("./ortmtlib.dll"))
+splib = ctypes.CDLL(os.path.abspath("./splib.dll"))
 
 model_path = ctypes.c_char_p(bytes("mt5-ja_zh_beam_search.onnx",'utf8'))
 spm_path = ctypes.c_char_p(bytes("vocabs_mc4.250000.100extra_sentencepiece.model","utf8"))
