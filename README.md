@@ -5,9 +5,6 @@ onnxruntime mT5 translator
 
 ```bash
 ortmt5 --model_path="path/to/mt5-ja_zh_beam_search.onnx" --spm_tokenizer_path="path/to/vocabs_mc4.250000.100extra_sentencepiece.model" --max_length=128 --min_length=1 --num_beams=8 --num_return_sequences=1 --length_penalty=1.1 --repetition_penalty=1.1
-
-# or you can run the python script
-python test_sp.py
 ```
 
 ### Build:
@@ -16,10 +13,15 @@ python test_sp.py
 "path/to/VsDevCmd.bat" -arch=amd64
 mkdir build
 cd build
+
 # if win64
 cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu'
+
 # if win32
 cmake .. -A win32 -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-x64' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu-win32'
+
+# if use DirectML
+cmake .. -DONNXRUNTIME_ROOTDIR='path/to/onnxruntime-win-dml' -DSENTENCEPIECE_ROOTDIR='path/to/sentencepiece' -DARGPARSE_ROOTDIR='path/to/argparse' -DICU_ROOTDIR='path/to/icu' -DPROVIDER="dml"
 
 cmake --build . --config Release
 xcopy Release/* path/to/install
